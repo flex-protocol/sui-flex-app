@@ -2,6 +2,16 @@
 @tailwind components;
 @tailwind utilities;
 
+
+@font-face {
+  font-family: "TwkeRegular";
+  src: url("/TWKEverett-Regular.otf");
+}
+@font-face {
+  font-family: "twkemono-bold";
+  src: url("/TWKEverettMono-Bold.otf");
+}
+
 :root {
   --foreground-rgb: 0, 0, 0;
   --background-start-rgb: 214, 219, 220;
@@ -14,6 +24,9 @@
     --background-start-rgb: 0, 0, 0;
     --background-end-rgb: 0, 0, 0;
   }
+}
+html {
+  font-family: 'TwkeRegular';
 }
 
 body {
