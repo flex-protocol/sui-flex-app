@@ -4,6 +4,7 @@ import SuietKit from "@/components/wallet/SuietKit";
 import Topbar from "@/components/shared/Topbar";
 import Tabbar from "@/components/shared/Tabbar";
 // import Tabbar from "@/components/shared/Tabbar";
+import "@suiet/wallet-kit/style.css";
 
 const inter = Inter({ subsets: ["latin"] });
 
