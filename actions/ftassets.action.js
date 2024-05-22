@@ -16,8 +16,9 @@ export async function getAllExchanges() {
 
 export async function calculateSwapAmountOut(xReserve,yReserve,xAmountIn) {
   try {
+    console.log('calculateSwapAmountOut', `${offchainBaseUrl}/api/utils/calculateSwapAmountOut?xReserve=${xReserve}&yReserve=${yReserve}&xAmountIn=${xAmountIn}&feeNumerator=3&feeDenominator=100`)
     const { data } = await axios.get(`${offchainBaseUrl}/api/utils/calculateSwapAmountOut?xReserve=${xReserve}&yReserve=${yReserve}&xAmountIn=${xAmountIn}&feeNumerator=3&feeDenominator=100`);
-    console.log('data', data)
+    console.log('calculateSwapAmountOut', data)
     return { data, errMsg: "" };
   } catch (error) {
     return { data: null, errMsg: error.message };

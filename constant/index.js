@@ -3,7 +3,8 @@ export const SUI_TESTNET_JSON_RPC_URL = "https://sui-testnet.nodeinfra.com/?apik
 export const SUI_MAINNET_JSON_RPC_URL = "https://sui-testnet.nodeinfra.com/?apikey=A5hM76oO0ZzZtWa0jigeEgBWECIAuosG";
 
 // Package IDs
-export const CORE_PACKAGE_ID = "0x81ccbc687db60ddb6a87100e007396d71d85d41677305e70af7b91305ec5514b";
+export const CORE_PACKAGE_ID = "0x7d6ed7690d4501cc83f1bdab01e45738022890da4030eee655cdbcb985a6f072";
+export const CORE_PACKAGE_ID_NOT_OX = "7d6ed7690d4501cc83f1bdab01e45738022890da4030eee655cdbcb985a6f072";
 export const UTILS_PACKAGE_ID = "0xf08c2f0fce586a3d0b6e4964b31a4e8b46e060fe17bb591b6c8deb5514f67c22";
 export const NFT_SERVICE_IMPL_PACKAGE_ID = "0x6485d131e5a2a30c7b606fcb71c1b3c828f00ae5e5e4298269cc9e7287fe0223";
 
