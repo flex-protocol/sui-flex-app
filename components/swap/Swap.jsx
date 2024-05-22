@@ -33,6 +33,9 @@ export default function Swap() {
     const [selectTokenXBalance, setSelectTokenXBalance] = useState([]);
     const [selectTokenYBalance, setSelectTokenYBalance] = useState([]);
     const [swapType, setSwapType] = useState('');
+    const [swapRate, setSwapRate] = useState(0);
+    const [slippage, setSlippage] = useState(0.5);
+    const [yreserve, setYreserve] = useState(0);
 
 
     useEffect(() => {
@@ -53,11 +56,12 @@ export default function Swap() {
         if (selectTokenX === '' || selectTokenY === "") {
             return
         }
-        queryPairAndAmountOut(e.target.value, selectTokenX, selectTokenY)
+        queryPairAndAmountOut(e.target.value * (10 ** coinInfo[selectTokenX].decimals), selectTokenX, selectTokenY, slippage)
         // arrangeCollectionsByTradingPair()
     };
 
-    async function queryPairAndAmountOut(_amountValue, tokenX, tokenY) {
+    async function queryPairAndAmountOut(_amountValue, tokenX, tokenY, _slippage) {
+        _amountValue = parseInt(_amountValue)
         const {tokenPairs, swapType: _swapType} = queryTokenPairs(tokenX, tokenY)
         if (tokenPairs === '') {
             setInputYAmount(0)
@@ -78,11 +82,16 @@ export default function Swap() {
         if (selectAction === 'SWAP') {
             if (swapType === 'swap_x' || _swapType === 'swap_x') {
                 amountOut = await calculateSwapAmountOut(txn.data.content.fields.x_reserve, txn.data.content.fields.y_reserve, _amountValue);
+                setSwapRate(txn.data.content.fields.x_reserve / txn.data.content.fields.y_reserve)
+                setYreserve(txn.data.content.fields.y_reserve)
             } else {
                 amountOut = await calculateSwapAmountOut(txn.data.content.fields.y_reserve, txn.data.content.fields.x_reserve, _amountValue);
+                setSwapRate(txn.data.content.fields.y_reserve / txn.data.content.fields.x_reserve)
+                setYreserve(txn.data.content.fields.x_reserve)
             }
             // console.log('amountOut', amountOut)
-            setInputYAmount(amountOut.data / (10 ** coinInfo[tokenY].decimals))
+            // console.log('(amountOut.data*(1-slippage))', (1 - slippage * 0.01), (amountOut.data * (1 - slippage)))
+            setInputYAmount((amountOut.data * (1 - _slippage * 0.01)) / (10 ** coinInfo[tokenY].decimals))
         } else if (selectAction === 'ADDLIQUIDITY') {
             amountOut = Math.floor(txn.data.content.fields.x_reserve / txn.data.content.fields.y_reserve * _amountValue)
             // console.log('amountOut', amountOut)
@@ -92,6 +101,11 @@ export default function Swap() {
 
     const handleYAmountChange = async (e) => {
         setInputYAmount(e.target.value)
+    };
+
+    const handleSlippageChange = async (e) => {
+        setSlippage(e.target.value)
+        queryPairAndAmountOut(inputXAmount * (10 ** coinInfo[selectTokenX].decimals), selectTokenX, selectTokenY, e.target.value)
     };
 
     function queryBalanceObj(tokenBalance, inputAmount) {
@@ -403,16 +417,19 @@ export default function Swap() {
 
     function inputMaxAmount(tokenXOrY) {
         if (tokenXOrY === 'X') {
-            if (selectTokenX===''){
+            if (selectTokenX === '') {
                 return
             }
-            setInputXAmount(calculateBalance(selectTokenXBalance))
+            const balanceX = calculateBalance(selectTokenXBalance, selectTokenX)
+            setInputXAmount(balanceX)
+            queryPairAndAmountOut(balanceX * (10 ** coinInfo[selectTokenX].decimals), selectTokenX, selectTokenY, slippage)
         } else {
-            if (selectTokenY===''){
+            if (selectTokenY === '') {
                 return
             }
-            setInputYAmount(calculateBalance(selectTokenYBalance))
-
+            const balanceY = calculateBalance(selectTokenYBalance, selectTokenY)
+            setInputYAmount(balanceY)
+            // queryPairAndAmountOut(balanceX, selectTokenX, selectTokenY, slippage)
         }
     }
 
@@ -432,7 +449,7 @@ export default function Swap() {
             setSelectTokenXBalance(result)
             // queryTokenPairs(tokenInfo, selectTokenY)
             if (selectTokenY !== '') {
-                queryPairAndAmountOut(inputXAmount, tokenInfo, selectTokenY)
+                queryPairAndAmountOut(inputXAmount * (10 ** coinInfo[tokenInfo].decimals), tokenInfo, selectTokenY, slippage)
             }
         } else {
             setSelectTokenY(tokenInfo)
@@ -441,7 +458,7 @@ export default function Swap() {
             // queryTokenPairs(selectTokenX, tokenInfo)
             if (selectTokenX !== '') {
                 // 只能从x到y,没有开发y到x的兑换量
-                queryPairAndAmountOut(inputXAmount, selectTokenX, tokenInfo)
+                queryPairAndAmountOut(inputXAmount * (10 ** coinInfo[tokenInfo].decimals), selectTokenX, tokenInfo, slippage)
             }
         }
         document.getElementById('select_asset_modal').close()
@@ -485,56 +502,69 @@ export default function Swap() {
                         </div>
                         <div></div>
                     </div>
-                    <div className=" flex items-center  rounded-[1rem] mx-[1rem] bg-[#fbf2c4]">
-                        <div className="pl-[1rem] py-[0.5rem]">
-                            <div className="mb-[0.25rem]  font-[400]">You pay</div>
-                            <div className="flex items-center bg-[#323232] rounded-[0.5rem] py-[0.25rem] px-[1rem]">
-                                <input onChange={handleXAmountChange} value={inputXAmount} type="text" className="mr-[0.5rem] bg-[#323232] text-white focus:outline-none" placeholder="Asset"/>
-                                {/*<span className="text-white mr-[50px]">Asset</span>*/}
-                                <div onClick={() => openAssetModal('tokenx')} className="text-white bg-[#808080] py-[10px] rounded-[0.5rem] px-[8px] flex items-center cursor-pointer w-[10rem]">
-                                    <span className="mr-[0.25rem]">{selectTokenX === '' ? 'Select Token' : selectTokenX.split("::")[2]}</span>
-                                    <Image src="/down.svg" width={20} height={20}></Image>
+                    <div className=" bg-[#fbf2c4] rounded-[1rem] mx-[1rem]">
+                        <div className="flex items-center">
+                            <div className="pl-[1rem] py-[0.5rem]">
+                                <div className="mb-[0.25rem]  font-[400]">You pay</div>
+                                <div className="flex items-center bg-[#323232] rounded-[0.5rem] py-[0.25rem] px-[1rem]">
+                                    <input onChange={handleXAmountChange} value={inputXAmount} type="text" className="mr-[0.5rem] bg-[#323232] text-white focus:outline-none" placeholder="Asset"/>
+                                    {/*<span className="text-white mr-[50px]">Asset</span>*/}
+                                    <div onClick={() => openAssetModal('tokenx')} className="text-white bg-[#808080] py-[10px] rounded-[0.5rem] px-[8px] flex items-center cursor-pointer w-[10rem]">
+                                        <span className="mr-[0.25rem]">{selectTokenX === '' ? 'Select Token' : selectTokenX.split("::")[2]}</span>
+                                        <Image src="/down.svg" width={20} height={20}></Image>
+                                    </div>
+                                    {/*<select className="select select-bordered w-full max-w-xs" value={selectTokenX} onChange={handleTokenXChange}>*/}
+                                    {/*    <option value="" selected>Select Token</option>*/}
+                                    {/*    <option value="0000000000000000000000000000000000000000000000000000000000000002::sui::SUI">SUI</option>*/}
+                                    {/*    <option value="0x7d6ed7690d4501cc83f1bdab01e45738022890da4030eee655cdbcb985a6f072::example_coin::EXAMPLE_COIN">EXAMPLE_COIN</option>*/}
+                                    {/*</select>*/}
+                                    <button className="btn text-white bg-[#0337ffcc] border-none ml-[0.25rem]" onClick={() => inputMaxAmount('X')}>Max</button>
                                 </div>
-                                {/*<select className="select select-bordered w-full max-w-xs" value={selectTokenX} onChange={handleTokenXChange}>*/}
-                                {/*    <option value="" selected>Select Token</option>*/}
-                                {/*    <option value="0000000000000000000000000000000000000000000000000000000000000002::sui::SUI">SUI</option>*/}
-                                {/*    <option value="0x7d6ed7690d4501cc83f1bdab01e45738022890da4030eee655cdbcb985a6f072::example_coin::EXAMPLE_COIN">EXAMPLE_COIN</option>*/}
-                                {/*</select>*/}
-                                <button className="btn text-white bg-[#0337ffcc] border-none ml-[0.25rem]" onClick={() => inputMaxAmount('X')}>Max</button>
-                            </div>
-                            <div className="flex justify-between text-[0.5rem] text-[#808080] mt-[0.5rem]">
-                                <span>$0</span><span>Balance:{calculateBalance(selectTokenXBalance, selectTokenX)}</span>
-                            </div>
-                        </div>
-                        <div className="mx-[2rem]">
-                            <Image src="/toright.svg" width={100} height={50}></Image>
-                        </div>
-                        <div className="pl-[1rem] py-[0.5rem] mr-[1rem]">
-                            <div className="mb-[0.25rem]  font-[400]">You Receive</div>
-                            <div className="flex items-center bg-[#323232] rounded-[0.5rem] py-[0.25rem] px-[1rem]">
-                                <input type="text" className="mr-[0.5rem]  bg-[#323232] text-white focus:outline-none" onChange={handleYAmountChange} value={inputYAmount} placeholder="Asset"/>
-                                {/*<select className="select select-bordered w-full max-w-xs" value={selectTokenY} onChange={handleTokenYChange}>*/}
-                                {/*    <option value="" selected>Select Token</option>*/}
-                                {/*    <option value="0x7d6ed7690d4501cc83f1bdab01e45738022890da4030eee655cdbcb985a6f072::example_coin::EXAMPLE_COIN">EXAMPLE_COIN</option>*/}
-                                {/*    <option value="0000000000000000000000000000000000000000000000000000000000000002::sui::SUI">SUI</option>*/}
-                                {/*</select>*/}
-                                <div onClick={() => openAssetModal('tokeny')} className="text-white bg-[#808080] py-[10px] rounded-[0.5rem] px-[8px] flex items-center cursor-pointer w-[10rem]">
-                                    <span className="mr-[0.25rem]">{selectTokenY === '' ? 'Select Token' : selectTokenY.split("::")[2]}</span>
-                                    <Image src="/down.svg" width={20} height={20}></Image>
+                                <div className="flex justify-between text-[0.5rem] text-[#808080] mt-[0.5rem]">
+                                    <span>$0</span><span>Balance:{calculateBalance(selectTokenXBalance, selectTokenX)}</span>
                                 </div>
-                                <button className="btn text-white bg-[#0337ffcc] border-none ml-[0.25rem]" onClick={() => inputMaxAmount('Y')}>Max</button>
                             </div>
-                            <div className="flex justify-between text-[0.5rem] text-[#808080] mt-[0.5rem]">
-                                <span>$0</span><span>Balance:{calculateBalance(selectTokenYBalance, selectTokenY)}</span>
+                            <div className="mx-[2rem]">
+                                <Image src="/toright.svg" width={100} height={50}></Image>
+                            </div>
+                            <div className="pl-[1rem] py-[0.5rem] mr-[1rem]">
+                                <div className="mb-[0.25rem]  font-[400]">You Receive</div>
+                                <div className="flex items-center bg-[#323232] rounded-[0.5rem] py-[0.25rem] px-[1rem]">
+                                    <input type="text" className="mr-[0.5rem]  bg-[#323232] text-white focus:outline-none" onChange={handleYAmountChange} value={inputYAmount} placeholder="Asset"/>
+                                    {/*<select className="select select-bordered w-full max-w-xs" value={selectTokenY} onChange={handleTokenYChange}>*/}
+                                    {/*    <option value="" selected>Select Token</option>*/}
+                                    {/*    <option value="0x7d6ed7690d4501cc83f1bdab01e45738022890da4030eee655cdbcb985a6f072::example_coin::EXAMPLE_COIN">EXAMPLE_COIN</option>*/}
+                                    {/*    <option value="0000000000000000000000000000000000000000000000000000000000000002::sui::SUI">SUI</option>*/}
+                                    {/*</select>*/}
+                                    <div onClick={() => openAssetModal('tokeny')} className="text-white bg-[#808080] py-[10px] rounded-[0.5rem] px-[8px] flex items-center cursor-pointer w-[10rem]">
+                                        <span className="mr-[0.25rem]">{selectTokenY === '' ? 'Select Token' : selectTokenY.split("::")[2]}</span>
+                                        <Image src="/down.svg" width={20} height={20}></Image>
+                                    </div>
+                                    <button className="btn text-white bg-[#0337ffcc] border-none ml-[0.25rem]" onClick={() => inputMaxAmount('Y')}>Max</button>
+                                </div>
+                                <div className="flex justify-between text-[0.5rem] text-[#808080] mt-[0.5rem]">
+                                    <span>$0</span><span>Balance:{calculateBalance(selectTokenYBalance, selectTokenY)}</span>
+                                </div>
                             </div>
                         </div>
+
+                        <div className="flex flex-col items-end	mt-[0.25rem] px-[1rem]">
+                            <div className="bg-[#323232] text-white rounded-[1rem] py-[0.25rem]">
+                                <input className="bg-[#323232] rounded-l-[1rem] pl-[1rem] w-[5rem]" onChange={handleSlippageChange} value={slippage} type="text"/>
+                                <span className="pr-[1rem]">% Slippage</span>
+                            </div>
+                            <div className="text-[#0337FFCC] text-[0.5rem] mr-[1rem] mt-[0.2rem] mb-[0.5rem]">
+                                0.5% Recommended
+                            </div>
+                        </div>
+
                     </div>
                     {/*<div>Preview</div>*/}
                     {/*onClick={() => doAction()}*/}
                     <button className="btn bg-[#3556D5] border-none text-white" onClick={() => openModal()}>Preview</button>
                     <ChainResult title={selectAction === 'SWAP' ? "Swap submitted" : selectAction === 'ADDLIQUIDITY' ? "Add liquidity submitted" : "Create pool submitted"} inputX={inputXAmount} inputY={inputYAmount} inputXToken={selectTokenX === "" ? "" : selectTokenX.split("::")[2]} inputYToken={selectTokenY === "" ? "" : selectTokenY.split("::")[2]}/>
-                    <TransactionOverview handleClick={doAction} inputX={inputXAmount} inputY={inputYAmount} inputXToken={selectTokenX === "" ? "" : selectTokenX.split("::")[2]} inputYToken={selectTokenY === "" ? "" : selectTokenY.split("::")[2]}/>
-                    <AddLiquidityTransactionOverview handleClick={doAction} inputX={inputXAmount} inputY={inputYAmount} inputXToken={selectTokenX === "" ? "" : selectTokenX.split("::")[2]} inputYToken={selectTokenY === "" ? "" : selectTokenY.split("::")[2]}/>
+                    <TransactionOverview handleClick={doAction} inputX={inputXAmount} inputY={inputYAmount} inputXToken={selectTokenX === "" ? "" : selectTokenX.split("::")[2]} inputYToken={selectTokenY === "" ? "" : selectTokenY.split("::")[2]} slippage={slippage} impact={(inputYAmount * (10 ** coinInfo[selectTokenY].decimals) / yreserve * 100).toFixed(2)}/>
+                    <AddLiquidityTransactionOverview handleClick={doAction} inputX={inputXAmount} inputY={inputYAmount} inputXToken={selectTokenX === "" ? "" : selectTokenX.split("::")[2]} inputYToken={selectTokenY === "" ? "" : selectTokenY.split("::")[2]} swapRate={swapRate}/>
                     <SelectAsset handleClick={selectToken}/>
                     {/*<button onClick={()=>document.getElementById('my_modal_2').showModal()}>openResult</button> <br/>*/}
                     {/*<button onClick={()=>document.getElementById('transaction_overview_modal').showModal()}>openOver</button> <br/>*/}

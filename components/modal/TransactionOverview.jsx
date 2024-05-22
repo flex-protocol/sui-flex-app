@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 
-export default function TransactionOverview({handleClick, inputX,inputY,inputXToken,inputYToken}) {
+export default function TransactionOverview({handleClick, inputX, inputY, inputXToken, inputYToken, swapRate, slippage, impact}) {
 
     return (
         <>
@@ -30,9 +30,40 @@ export default function TransactionOverview({handleClick, inputX,inputY,inputXTo
                         <div>$29.18</div>
                         <div>Balance: 39.18</div>
                     </div>
+                    <div className="flex justify-between mt-[1rem] text-[0.5rem]">
+                        <div>Rate</div>
+                        <div>1 {inputXToken} = {swapRate} {inputYToken}</div>
+                    </div>
+                    <div className="flex justify-between mt-[0.5rem] text-[0.5rem]">
+                        <div>Price Impact</div>
+                        <div>~ {impact}%</div>
+                    </div>
+                    <div className="flex justify-between mt-[0.5rem] text-[0.5rem]">
+                        <div>Max.slippage</div>
+                        <div>{slippage}%</div>
+                    </div>
+                    <div className="flex justify-between mt-[0.5rem] text-[0.5rem]">
+                        <div>Receive at least</div>
+                        <div>{inputY.toFixed(2)} {inputYToken}</div>
+                    </div>
+                    <div className="flex justify-between mt-[0.5rem] text-[0.5rem]">
+                        <div>Fee</div>
+                        <div>0.1%</div>
+                    </div>
+                    <div className="flex justify-between mt-[0.5rem] text-[0.5rem]">
+                        <div>Network</div>
+                        <div>SUI Network</div>
+                    </div>
+
+                    <div className="flex justify-between mt-[0.5rem] text-[0.5rem]">
+                        <div>Network cost</div>
+                        <div>$2.71</div>
+                    </div>
+
                     <div className="flex justify-center mt-[1rem]">
                         <button className="btn bg-[#0337FFCC] text-white w-[80%]" onClick={handleClick}>Swap</button>
                     </div>
+
                 </div>
                 <form method="dialog" className="modal-backdrop">
                     <button>close</button>
