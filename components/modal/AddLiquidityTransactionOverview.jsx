@@ -9,7 +9,7 @@ export default function TransactionOverview({handleClick, inputX,inputY,inputXTo
             <dialog id="add_liquidity_transaction_overview_modal" className="modal">
                 <div className="modal-box">
                     <div><span>X</span><span className="ml-4">Transaction Overview</span></div>
-                    <div className="mb-[0.5rem] mt-[0.25rem]">Pair Token 1</div>
+                    <div className="mb-[0.5rem] mt-[1rem]">Pair Token 1</div>
 
                     <div className="flex justify-between text-[1rem]">
                         <div>{inputX}</div>

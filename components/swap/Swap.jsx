@@ -36,6 +36,7 @@ export default function Swap() {
     const [swapRate, setSwapRate] = useState(0);
     const [slippage, setSlippage] = useState(0.5);
     const [yreserve, setYreserve] = useState(0);
+    const [resultHash, setResultHash] = useState('');
 
 
     useEffect(() => {
@@ -44,10 +45,6 @@ export default function Swap() {
 
     async function initData() {
         setAllExchanges((await getAllExchanges()).data);
-        // console.log('allExchanges', allExchanges)
-        // console.log('allExchanges', allExchanges)
-        // console.log('wallet status22222', balance)
-        // console.log('connected account info', wallet.account)
     }
 
     const handleXAmountChange = async (e) => {
@@ -56,12 +53,11 @@ export default function Swap() {
         if (selectTokenX === '' || selectTokenY === "") {
             return
         }
-        queryPairAndAmountOut(e.target.value * (10 ** coinInfo[selectTokenX].decimals), selectTokenX, selectTokenY, slippage)
+        queryPairAndAmountOut(parseInt(e.target.value * (10 ** coinInfo[selectTokenX].decimals)), selectTokenX, selectTokenY, slippage)
         // arrangeCollectionsByTradingPair()
     };
 
     async function queryPairAndAmountOut(_amountValue, tokenX, tokenY, _slippage) {
-        _amountValue = parseInt(_amountValue)
         const {tokenPairs, swapType: _swapType} = queryTokenPairs(tokenX, tokenY)
         if (tokenPairs === '') {
             setInputYAmount(0)
@@ -89,11 +85,15 @@ export default function Swap() {
                 setSwapRate(txn.data.content.fields.y_reserve / txn.data.content.fields.x_reserve)
                 setYreserve(txn.data.content.fields.x_reserve)
             }
-            // console.log('amountOut', amountOut)
-            // console.log('(amountOut.data*(1-slippage))', (1 - slippage * 0.01), (amountOut.data * (1 - slippage)))
-            setInputYAmount((amountOut.data * (1 - _slippage * 0.01)) / (10 ** coinInfo[tokenY].decimals))
+            const result = (amountOut.data * (1 - _slippage * 0.01)) / (10 ** coinInfo[tokenY].decimals)
+            console.log('resultresult', result)
+            setInputYAmount(result === undefined ? 0 : result.toFixed(2))
         } else if (selectAction === 'ADDLIQUIDITY') {
-            amountOut = Math.floor(txn.data.content.fields.x_reserve / txn.data.content.fields.y_reserve * _amountValue)
+            if (swapType === 'swap_x') {
+                amountOut = Math.floor(_amountValue / (txn.data.content.fields.x_reserve / txn.data.content.fields.y_reserve))
+            } else {
+                amountOut = Math.floor(txn.data.content.fields.x_reserve / txn.data.content.fields.y_reserve * _amountValue)
+            }
             // console.log('amountOut', amountOut)
             setInputYAmount(amountOut / (10 ** coinInfo[tokenY].decimals))
         }
@@ -166,14 +166,8 @@ export default function Swap() {
             toast.custom(<TxToast title="don't have pool" digest={""}/>);
             return;
         }
-        let XAmount = inputXAmount * (10 ** coinInfo[selectTokenX].decimals)
-        let YAmount = inputYAmount * (10 ** coinInfo[selectTokenY].decimals)
-        // if (selectTokenX === '0000000000000000000000000000000000000000000000000000000000000002::sui::SUI') {
-        //     XAmount = inputXAmount * 10 ** 9
-        // }
-        // if (selectTokenY === '0000000000000000000000000000000000000000000000000000000000000002::sui::SUI') {
-        //     YAmount = inputYAmount * 10 ** 9
-        // }
+        let XAmount = parseInt(inputXAmount * (10 ** coinInfo[selectTokenX].decimals))
+        let YAmount = parseInt(inputYAmount * (10 ** coinInfo[selectTokenY].decimals))
         if (selectAction === 'SWAP') {
             swap(tokenPairs, swapType, XAmount, YAmount)
         } else if (selectAction === 'ADDLIQUIDITY') {
@@ -184,45 +178,11 @@ export default function Swap() {
     function doSplitXCoin(txb, XAmount, YAmount) {
         let splitXCoin = ''
         if (selectTokenX === '0000000000000000000000000000000000000000000000000000000000000002::sui::SUI') {
-
-            console.log('selectTokenXBalance', selectTokenXBalance)
-            // let resetBalance = XAmount
-            // let destination = {}
-            // let sourceCoins = []
             splitXCoin = txb.splitCoins(txb.gas, [txb.pure(XAmount)]);
             return splitXCoin
-            /*if (selectTokenXBalance.length === 0) {
-                return null;
-            } else {
-                for (let i = 0; i < selectTokenXBalance.length; i++) {
-                    if (i === 0) {
-                        if (resetBalance < selectTokenXBalance[i].balance) {
-                            // 第一个就够了,要split
-                            splitXCoin = txb.splitCoins(txb.gas, [txb.pure(XAmount)]);
-                            return splitXCoin
-                        } else {
-                            // 不够,要分主次,然后merge
-                            console.log('selectTokenXBalance', selectTokenXBalance)
-                            destination = txb.object(selectTokenXBalance[i].coinObjectId)
-                            resetBalance = resetBalance - selectTokenXBalance[i].balance
-                        }
-                    } else {
-                        let beforeResetBalance = resetBalance
-                        resetBalance = resetBalance - selectTokenXBalance[i].balance
-                        if (resetBalance > 0) {
-                            sourceCoins.push(txb.object(selectTokenXBalance[i].coinObjectId))
-                        } else {
-                            sourceCoins.push(txb.object(selectTokenXBalance[i].coinObjectId))
-                            return txb.mergeCoins(destination, sourceCoins)
-                        }
-                    }
-                }
-            }*/
         } else {
             const tempBalanceObj = queryBalanceObj(selectTokenXBalance, XAmount)
             if (tempBalanceObj !== '') {
-                // splitXCoin = txb.splitCoins(tempBalanceObj.coinObjectId, [txb.pure(XAmount)]);
-
                 splitXCoin = tempBalanceObj.coinObjectId
             } else {
                 // todo 合并或报错
@@ -260,30 +220,21 @@ export default function Swap() {
                 txb.object(splitYCoin),
                 txb.pure.u64(YAmount),
             ]
-            // if (swapType === 'swap_x') {
-            //     param =
-            // } else {
-            //     param = [
-            //         txb.object(tokenPairs),
-            //         txb.object(splitXCoin),
-            //         txb.pure.u64(XAmount),
-            //         txb.object(splitYCoin),
-            //         txb.pure.u64(YAmount)
-            //     ]
-            // }
-
             console.log('param', param, COIN_TYPE)
-            // txb.setGasBudget(10000);
             txb.moveCall({
                 target: `${CORE_PACKAGE_ID}::token_pair_service::${swapType}`,
                 arguments: param,
                 typeArguments: [COIN_TYPE, `${CORE_PACKAGE_ID_NOT_OX}::example_coin::EXAMPLE_COIN`]
             });
+            if (selectTokenY === '0000000000000000000000000000000000000000000000000000000000000002::sui::SUI') {
+                txb.transferObjects([splitYCoin], txb.pure.address(account.address))
+            }
 
             const res = await signAndExecuteTransactionBlock({
                 transactionBlock: txb,
             });
             console.log('chain result', res)
+            setResultHash(res.digest)
             document.getElementById('transaction_overview_modal').close()
             document.getElementById('my_modal_2').showModal()
 
@@ -336,19 +287,28 @@ export default function Swap() {
         try {
             const txb = new TransactionBlock();
             txb.setGasBudget(100000000);
-            // const [xCoin] = txb.splitCoins(txb.gas, [txb.pure(3)]);
-            // const splitXCoin = doSplitXCoin(txb)
-            // const splitYCoin = doSplitYCoin(txb)
             const splitXCoin = doSplitXCoin(txb, XAmount, YAmount)
             const splitYCoin = doSplitYCoin(txb, XAmount, YAmount)
-            let param = [
-                txb.object(tokenPairs),
-                txb.object(splitXCoin),
-                txb.pure.u64(XAmount),
-                txb.object(splitYCoin),
-                txb.pure.u64(YAmount),
-                txb.pure([])
-            ]
+            let param = ''
+            if (swapType === 'swap_x') {
+                param = [
+                    txb.object(tokenPairs),
+                    txb.object(splitXCoin),
+                    txb.pure.u64(XAmount),
+                    txb.object(splitYCoin),
+                    txb.pure.u64(YAmount),
+                    txb.pure([])
+                ]
+            } else {
+                param = [
+                    txb.object(tokenPairs),
+                    txb.object(splitYCoin),
+                    txb.pure.u64(YAmount),
+                    txb.object(splitXCoin),
+                    txb.pure.u64(XAmount),
+                    txb.pure([])
+                ]
+            }
             console.log('param', param, COIN_TYPE)
             txb.moveCall({
                 target: `${CORE_PACKAGE_ID}::token_pair_service::add_liquidity`,
@@ -360,7 +320,7 @@ export default function Swap() {
                 transactionBlock: txb,
             });
             console.log('chain result', res)
-
+            setResultHash(res.digest)
             document.getElementById('add_liquidity_transaction_overview_modal').close()
             document.getElementById('my_modal_2').showModal()
 
@@ -381,27 +341,10 @@ export default function Swap() {
         const txn2 = await client.getCoins({
             owner: account.address,
             coinType: coinAddress
-            // fetch the object content field
         });
         console.log('txn2', txn2)
         return txn2.data
     }
-
-    // async function handleTokenXChange(event) {
-    //     // console.log('account', account.address)
-    //     // console.log('account', account.chains[0].split(":")[1])
-    //     // console.log(event.target.value)
-    //     setSelectTokenX(event.target.value);
-    //     const result = await getCoins(event.target.value)
-    //     console.log('result', result)
-    //     setSelectTokenXBalance(result)
-    // }
-    //
-    // async function handleTokenYChange(event) {
-    //     setSelectTokenY(event.target.value);
-    //     const result = await getCoins(event.target.value)
-    //     setSelectTokenYBalance(result)
-    // }
 
     async function handleActionChange(value) {
         setSelectAction(value);
@@ -429,7 +372,6 @@ export default function Swap() {
             }
             const balanceY = calculateBalance(selectTokenYBalance, selectTokenY)
             setInputYAmount(balanceY)
-            // queryPairAndAmountOut(balanceX, selectTokenX, selectTokenY, slippage)
         }
     }
 
@@ -445,9 +387,7 @@ export default function Swap() {
         if (selectTokenAsset === 'tokenx') {
             setSelectTokenX(tokenInfo)
             const result = await getCoins(tokenInfo)
-            console.log('result', result)
             setSelectTokenXBalance(result)
-            // queryTokenPairs(tokenInfo, selectTokenY)
             if (selectTokenY !== '') {
                 queryPairAndAmountOut(inputXAmount * (10 ** coinInfo[tokenInfo].decimals), tokenInfo, selectTokenY, slippage)
             }
@@ -473,7 +413,6 @@ export default function Swap() {
     return (
         <>
             <div className="relative flex flex-col justify-center items-center gap-8 py-16 text-[#030201]">
-                {/*{JSON.stringify(objects)}*/}
                 <div className="font-[700] w-[60%] font-['twkemono-bold']">
                     <h1 className="lg:text-4xl text-2xl goldman-bold text-[3rem] text-left">Swap Anything</h1>
                     <h1 className="lg:text-4xl text-2xl goldman-bold text-right">anytime anywhere</h1>
@@ -481,12 +420,6 @@ export default function Swap() {
                 <div className="flex">
                     <div>
                         <div>
-                            {/*<select value={selectAction} onChange={handleActionChange} className="select select-bordered w-full max-w-xs font-[700] rounded-[1rem] shadow-gray-50	bg-[#fbf2c4]">*/}
-                            {/*    <option defaultValue={"SWAP"} value="SWAP">SWAP</option>*/}
-                            {/*    <option value="ADDLIQUIDITY">ADD LIQUIDITY</option>*/}
-                            {/*    <option value="CREATE">CREATE</option>*/}
-                            {/*</select>*/}
-
                             <div className="dropdown dropdown-hover bg-[#fbf2c4] rounded-[1rem]">
                                 <div tabIndex={0} role="button" className="text-[1rem] font-[700] mx-[1.5rem] mt-[0.5rem] bg-[#fbf2c4] flex flex-col justify-center items-center w-[10rem]">
                                     <div className="mb-[1rem] mt-[0.5rem] font-['twkemono-bold']">{selectAction === 'ADDLIQUIDITY' ? 'ADD LIQUIDITY' : selectAction}</div>
@@ -505,7 +438,7 @@ export default function Swap() {
                     <div className=" bg-[#fbf2c4] rounded-[1rem] mx-[1rem]">
                         <div className="flex items-center">
                             <div className="pl-[1rem] py-[0.5rem]">
-                                <div className="mb-[0.25rem]  font-[400]">You pay</div>
+                                <div className="mb-[0.25rem]  font-[400]">{selectAction === 'SWAP' ? 'You pay' : 'Select Asset'}</div>
                                 <div className="flex items-center bg-[#323232] rounded-[0.5rem] py-[0.25rem] px-[1rem]">
                                     <input onChange={handleXAmountChange} value={inputXAmount} type="text" className="mr-[0.5rem] bg-[#323232] text-white focus:outline-none" placeholder="Asset"/>
                                     {/*<span className="text-white mr-[50px]">Asset</span>*/}
@@ -513,11 +446,6 @@ export default function Swap() {
                                         <span className="mr-[0.25rem]">{selectTokenX === '' ? 'Select Token' : selectTokenX.split("::")[2]}</span>
                                         <Image src="/down.svg" width={20} height={20}></Image>
                                     </div>
-                                    {/*<select className="select select-bordered w-full max-w-xs" value={selectTokenX} onChange={handleTokenXChange}>*/}
-                                    {/*    <option value="" selected>Select Token</option>*/}
-                                    {/*    <option value="0000000000000000000000000000000000000000000000000000000000000002::sui::SUI">SUI</option>*/}
-                                    {/*    <option value="0x7d6ed7690d4501cc83f1bdab01e45738022890da4030eee655cdbcb985a6f072::example_coin::EXAMPLE_COIN">EXAMPLE_COIN</option>*/}
-                                    {/*</select>*/}
                                     <button className="btn text-white bg-[#0337ffcc] border-none ml-[0.25rem]" onClick={() => inputMaxAmount('X')}>Max</button>
                                 </div>
                                 <div className="flex justify-between text-[0.5rem] text-[#808080] mt-[0.5rem]">
@@ -528,14 +456,9 @@ export default function Swap() {
                                 <Image src="/toright.svg" width={100} height={50}></Image>
                             </div>
                             <div className="pl-[1rem] py-[0.5rem] mr-[1rem]">
-                                <div className="mb-[0.25rem]  font-[400]">You Receive</div>
+                                <div className="mb-[0.25rem]  font-[400]">{selectAction === 'SWAP' ? 'You Receive' : 'Select Asset'}</div>
                                 <div className="flex items-center bg-[#323232] rounded-[0.5rem] py-[0.25rem] px-[1rem]">
                                     <input type="text" className="mr-[0.5rem]  bg-[#323232] text-white focus:outline-none" onChange={handleYAmountChange} value={inputYAmount} placeholder="Asset"/>
-                                    {/*<select className="select select-bordered w-full max-w-xs" value={selectTokenY} onChange={handleTokenYChange}>*/}
-                                    {/*    <option value="" selected>Select Token</option>*/}
-                                    {/*    <option value="0x7d6ed7690d4501cc83f1bdab01e45738022890da4030eee655cdbcb985a6f072::example_coin::EXAMPLE_COIN">EXAMPLE_COIN</option>*/}
-                                    {/*    <option value="0000000000000000000000000000000000000000000000000000000000000002::sui::SUI">SUI</option>*/}
-                                    {/*</select>*/}
                                     <div onClick={() => openAssetModal('tokeny')} className="text-white bg-[#808080] py-[10px] rounded-[0.5rem] px-[8px] flex items-center cursor-pointer w-[10rem]">
                                         <span className="mr-[0.25rem]">{selectTokenY === '' ? 'Select Token' : selectTokenY.split("::")[2]}</span>
                                         <Image src="/down.svg" width={20} height={20}></Image>
@@ -548,7 +471,7 @@ export default function Swap() {
                             </div>
                         </div>
 
-                        <div className="flex flex-col items-end	mt-[0.25rem] px-[1rem]">
+                        {selectAction === 'SWAP' && <div className="flex flex-col items-end	mt-[0.25rem] px-[1rem]">
                             <div className="bg-[#323232] text-white rounded-[1rem] py-[0.25rem]">
                                 <input className="bg-[#323232] rounded-l-[1rem] pl-[1rem] w-[5rem]" onChange={handleSlippageChange} value={slippage} type="text"/>
                                 <span className="pr-[1rem]">% Slippage</span>
@@ -556,23 +479,15 @@ export default function Swap() {
                             <div className="text-[#0337FFCC] text-[0.5rem] mr-[1rem] mt-[0.2rem] mb-[0.5rem]">
                                 0.5% Recommended
                             </div>
-                        </div>
-
+                        </div>}
                     </div>
-                    {/*<div>Preview</div>*/}
-                    {/*onClick={() => doAction()}*/}
                     <button className="btn bg-[#3556D5] border-none text-white" onClick={() => openModal()}>Preview</button>
-                    <ChainResult title={selectAction === 'SWAP' ? "Swap submitted" : selectAction === 'ADDLIQUIDITY' ? "Add liquidity submitted" : "Create pool submitted"} inputX={inputXAmount} inputY={inputYAmount} inputXToken={selectTokenX === "" ? "" : selectTokenX.split("::")[2]} inputYToken={selectTokenY === "" ? "" : selectTokenY.split("::")[2]}/>
+                    <ChainResult title={selectAction === 'SWAP' ? "Swap submitted" : selectAction === 'ADDLIQUIDITY' ? "Add liquidity submitted" : "Create pool submitted"} inputX={inputXAmount} inputY={inputYAmount} inputXToken={selectTokenX === "" ? "" : selectTokenX.split("::")[2]} inputYToken={selectTokenY === "" ? "" : selectTokenY.split("::")[2]} resultHash={resultHash}/>
                     <TransactionOverview handleClick={doAction} inputX={inputXAmount} inputY={inputYAmount} inputXToken={selectTokenX === "" ? "" : selectTokenX.split("::")[2]} inputYToken={selectTokenY === "" ? "" : selectTokenY.split("::")[2]} slippage={slippage} impact={(inputYAmount * (10 ** coinInfo[selectTokenY].decimals) / yreserve * 100).toFixed(2)}/>
                     <AddLiquidityTransactionOverview handleClick={doAction} inputX={inputXAmount} inputY={inputYAmount} inputXToken={selectTokenX === "" ? "" : selectTokenX.split("::")[2]} inputYToken={selectTokenY === "" ? "" : selectTokenY.split("::")[2]} swapRate={swapRate}/>
                     <SelectAsset handleClick={selectToken}/>
-                    {/*<button onClick={()=>document.getElementById('my_modal_2').showModal()}>openResult</button> <br/>*/}
-                    {/*<button onClick={()=>document.getElementById('transaction_overview_modal').showModal()}>openOver</button> <br/>*/}
-                    {/*<button onClick={()=>document.getElementById('select_asset_modal').showModal()}>openselect_asset_modal</button>*/}
                 </div>
-
             </div>
-
         </>
     );
 }

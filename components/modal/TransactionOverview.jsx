@@ -1,8 +1,13 @@
 "use client";
 
 import Image from "next/image";
+import {useEffect} from "react";
 
 export default function TransactionOverview({handleClick, inputX, inputY, inputXToken, inputYToken, swapRate, slippage, impact}) {
+
+    useEffect(() => {
+        console.log('inputinputYY', inputY)
+    }, []);
 
     return (
         <>
@@ -44,7 +49,7 @@ export default function TransactionOverview({handleClick, inputX, inputY, inputX
                     </div>
                     <div className="flex justify-between mt-[0.5rem] text-[0.5rem]">
                         <div>Receive at least</div>
-                        <div>{inputY.toFixed(2)} {inputYToken}</div>
+                        <div>{inputY} {inputYToken}</div>
                     </div>
                     <div className="flex justify-between mt-[0.5rem] text-[0.5rem]">
                         <div>Fee</div>

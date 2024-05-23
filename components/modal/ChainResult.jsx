@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 
-export default function ChainResult({title,inputX, inputY, inputXToken, inputYToken}) {
+export default function ChainResult({title,inputX, inputY, inputXToken, inputYToken,resultHash}) {
 
     return (
         <>
@@ -16,7 +16,7 @@ export default function ChainResult({title,inputX, inputY, inputXToken, inputYTo
                         <Image src="/right.svg" width={25} height={25}></Image>
                         <span>{inputY} {inputYToken}</span>
                     </div>
-                    <p className="py-4  mt-[1rem] text-[0.875rem]">View on Explorer</p>
+                    <a target="_blank" href={'https://suiscan.xyz/testnet/tx/'+resultHash} className="py-4  mt-[1rem] text-[0.875rem] text-[#2837FE]">View on Explorer</a>
                 </div>
                 <form method="dialog" className="modal-backdrop">
                     <button>close</button>

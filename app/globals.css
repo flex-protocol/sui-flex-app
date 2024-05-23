@@ -12,6 +12,11 @@
   src: url("/TWKEverettMono-Bold.otf");
 }
 
+@font-face {
+  font-family: "twkemono-Regular";
+  src: url("/TWKEverettMono-Regular.otf");
+}
+
 :root {
   --foreground-rgb: 0, 0, 0;
   --background-start-rgb: 214, 219, 220;
