@@ -3,7 +3,7 @@
 import Image from "next/image";
 import {useEffect} from "react";
 
-export default function TransactionOverview({handleClick, inputX, inputY, inputXToken, inputYToken, swapRate, slippage, impact,inputTokenXPrice,inputTokenYPrice,tokenXBalance,tokenYBalance}) {
+export default function TransactionOverview({handleClick, inputX, inputY, inputXToken, inputYToken, swapRate, slippage, impact,inputTokenXPrice,inputTokenYPrice,tokenXBalance,tokenYBalance,closeClick}) {
 
     useEffect(() => {
         console.log('inputinputYY', inputY)
@@ -13,7 +13,9 @@ export default function TransactionOverview({handleClick, inputX, inputY, inputX
         <>
             <dialog id="transaction_overview_modal" className="modal">
                 <div className="modal-box">
-                    <div><span>X</span><span className="ml-4">Transaction Overview</span></div>
+                    <div className="flex items-center">
+                        <Image onClick={closeClick} className="cursor-pointer" src="/close.svg" width={20} height={20}></Image>
+                        <span className="ml-4">Transaction Overview</span></div>
                     <div className="mb-[0.5rem] mt-[0.25rem]">You pay</div>
 
                     <div className="flex justify-between text-[1rem]">
@@ -35,27 +37,27 @@ export default function TransactionOverview({handleClick, inputX, inputY, inputX
                         <div>${inputTokenYPrice}</div>
                         <div>Balance: {tokenYBalance}</div>
                     </div>
-                    <div className="flex justify-between mt-[1rem] text-[0.5rem]">
+                    <div className="flex justify-between mt-[1rem] text-[0.55rem]">
                         <div>Rate</div>
                         <div>1 {inputXToken} = {swapRate} {inputYToken}</div>
                     </div>
-                    <div className="flex justify-between mt-[0.5rem] text-[0.5rem]">
+                    <div className="flex justify-between mt-[0.5rem] text-[0.55rem]">
                         <div>Price Impact</div>
                         <div>~ {impact}%</div>
                     </div>
-                    <div className="flex justify-between mt-[0.5rem] text-[0.5rem]">
+                    <div className="flex justify-between mt-[0.5rem] text-[0.55rem]">
                         <div>Max.slippage</div>
                         <div>{slippage}%</div>
                     </div>
-                    <div className="flex justify-between mt-[0.5rem] text-[0.5rem]">
+                    <div className="flex justify-between mt-[0.5rem] text-[0.55rem]">
                         <div>Receive at least</div>
                         <div>{inputY} {inputYToken}</div>
                     </div>
-                    <div className="flex justify-between mt-[0.5rem] text-[0.5rem]">
+                    <div className="flex justify-between mt-[0.5rem] text-[0.55rem]">
                         <div>Fee</div>
                         <div>0.1%</div>
                     </div>
-                    <div className="flex justify-between mt-[0.5rem] text-[0.5rem]">
+                    <div className="flex justify-between mt-[0.5rem] text-[0.55rem]">
                         <div>Network</div>
                         <div>SUI Network</div>
                     </div>

@@ -350,7 +350,20 @@ export default function Swap() {
             // if (error.message.includes("Rejected from user")) return toast.error("You rejected the request in your wallet.");
             // toast.error(`Failed to add token to sell pool: ${error.message}.`);
         }
+    }
 
+    function closeLiquidityModal() {
+        if (document.getElementById('add_liquidity_transaction_overview_modal') === null){
+            return
+        }
+        document.getElementById('add_liquidity_transaction_overview_modal').close()
+    }
+
+    function closeSwapModal() {
+        if (document.getElementById('transaction_overview_modal') === null){
+            return
+        }
+        document.getElementById('transaction_overview_modal').close()
     }
 
 
@@ -494,7 +507,7 @@ export default function Swap() {
                                     </div>
                                     <button className="btn text-white bg-[#0337ffcc] border-none ml-[0.25rem]" onClick={() => inputMaxAmount('X')}>Max</button>
                                 </div>
-                                <div className="flex justify-between text-[0.5rem] text-[#808080] mt-[0.5rem]">
+                                <div className="flex justify-between text-[0.55rem] text-[#808080] mt-[0.5rem]">
                                     <span>{'$ ' + inputTokenXPrice}</span><span>Balance:{calculateBalance(selectTokenXBalance, selectTokenX)}</span>
                                 </div>
                             </div>
@@ -511,7 +524,7 @@ export default function Swap() {
                                     </div>
                                     <button className="btn text-white bg-[#0337ffcc] border-none ml-[0.25rem]" onClick={() => inputMaxAmount('Y')}>Max</button>
                                 </div>
-                                <div className="flex justify-between text-[0.5rem] text-[#808080] mt-[0.5rem]">
+                                <div className="flex justify-between text-[0.55rem] text-[#808080] mt-[0.5rem]">
                                     <span>{'$ ' + inputTokenYPrice}</span><span>Balance:{calculateBalance(selectTokenYBalance, selectTokenY)}</span>
                                 </div>
                             </div>
@@ -529,8 +542,8 @@ export default function Swap() {
                     </div>
                     <button className="btn bg-[#3556D5] border-none text-white" onClick={() => openModal()}>Preview</button>
                     <ChainResult title={selectAction === 'SWAP' ? "Swap submitted" : selectAction === 'ADDLIQUIDITY' ? "Add liquidity submitted" : "Create pool submitted"} inputX={inputXAmount} inputY={inputYAmount} inputXToken={selectTokenX === "" ? "" : selectTokenX.split("::")[2]} inputYToken={selectTokenY === "" ? "" : selectTokenY.split("::")[2]} resultHash={resultHash}/>
-                    <TransactionOverview handleClick={doAction} inputX={inputXAmount} inputY={inputYAmount} inputXToken={selectTokenX === "" ? "" : selectTokenX.split("::")[2]} inputYToken={selectTokenY === "" ? "" : selectTokenY.split("::")[2]} slippage={slippage} impact={(inputYAmount * (10 ** coinInfo[selectTokenY].decimals) / yreserve * 100).toFixed(2)} inputTokenXPrice={inputTokenXPrice} inputTokenYPrice={inputTokenYPrice} tokenXBalance={calculateBalance(selectTokenXBalance, selectTokenX)} tokenYBalance={calculateBalance(selectTokenYBalance, selectTokenY)}/>
-                    <AddLiquidityTransactionOverview handleClick={doAction} inputX={inputXAmount} inputY={inputYAmount} inputXToken={selectTokenX === "" ? "" : selectTokenX.split("::")[2]} inputYToken={selectTokenY === "" ? "" : selectTokenY.split("::")[2]} swapRate={swapRate}/>
+                    <TransactionOverview handleClick={doAction} inputX={inputXAmount} inputY={inputYAmount} inputXToken={selectTokenX === "" ? "" : selectTokenX.split("::")[2]} inputYToken={selectTokenY === "" ? "" : selectTokenY.split("::")[2]} slippage={slippage} impact={(inputYAmount * (10 ** coinInfo[selectTokenY].decimals) / yreserve * 100).toFixed(2)} inputTokenXPrice={inputTokenXPrice} inputTokenYPrice={inputTokenYPrice} tokenXBalance={calculateBalance(selectTokenXBalance, selectTokenX)} tokenYBalance={calculateBalance(selectTokenYBalance, selectTokenY)} closeClick={closeSwapModal}/>
+                    <AddLiquidityTransactionOverview handleClick={doAction} inputX={inputXAmount} inputY={inputYAmount} inputXToken={selectTokenX === "" ? "" : selectTokenX.split("::")[2]} inputYToken={selectTokenY === "" ? "" : selectTokenY.split("::")[2]} swapRate={swapRate} inputTokenXPrice={inputTokenXPrice} inputTokenYPrice={inputTokenYPrice} tokenXBalance={calculateBalance(selectTokenXBalance, selectTokenX)} tokenYBalance={calculateBalance(selectTokenYBalance, selectTokenY)} closeClick={closeLiquidityModal}/>
                     <SelectAsset handleClick={selectToken}/>
                 </div>
             </div>
