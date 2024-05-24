@@ -512,7 +512,7 @@ export default function Swap() {
                                 </div>
                             </div>
                             <div className="mx-[2rem]">
-                                <Image src="/toright.svg" width={100} height={50}></Image>
+                                {selectAction === 'SWAP' ?<Image src="/toright.svg" width={100} height={50}></Image>:<Image src="/PlusPair.svg" width={100} height={50}></Image>}
                             </div>
                             <div className="pl-[1rem] py-[0.5rem] mr-[1rem]">
                                 <div className="mb-[0.25rem]  font-[400]">{selectAction === 'SWAP' ? 'You Receive' : 'Select Asset'}</div>
