@@ -3,7 +3,7 @@
 import Image from "next/image";
 import {useEffect} from "react";
 
-export default function TransactionOverview({handleClick, inputX, inputY, inputXToken, inputYToken, swapRate, slippage, impact}) {
+export default function TransactionOverview({handleClick, inputX, inputY, inputXToken, inputYToken, swapRate, slippage, impact,inputTokenXPrice,inputTokenYPrice,tokenXBalance,tokenYBalance}) {
 
     useEffect(() => {
         console.log('inputinputYY', inputY)
@@ -21,8 +21,8 @@ export default function TransactionOverview({handleClick, inputX, inputY, inputX
                         <div>{inputXToken}</div>
                     </div>
                     <div className="flex justify-between mt-[0.25rem] text-[0.5rem] text-[#808080]">
-                        <div>$29.18</div>
-                        <div>Balance: 39.18</div>
+                        <div>${inputTokenXPrice}</div>
+                        <div>Balance: {tokenXBalance}</div>
                     </div>
                     <div className="mt-[0.5rem]">
                         You receive
@@ -32,8 +32,8 @@ export default function TransactionOverview({handleClick, inputX, inputY, inputX
                         <div>{inputYToken}</div>
                     </div>
                     <div className="flex justify-between mt-[0.25rem] text-[0.5rem] text-[#808080]">
-                        <div>$29.18</div>
-                        <div>Balance: 39.18</div>
+                        <div>${inputTokenYPrice}</div>
+                        <div>Balance: {tokenYBalance}</div>
                     </div>
                     <div className="flex justify-between mt-[1rem] text-[0.5rem]">
                         <div>Rate</div>
@@ -60,10 +60,10 @@ export default function TransactionOverview({handleClick, inputX, inputY, inputX
                         <div>SUI Network</div>
                     </div>
 
-                    <div className="flex justify-between mt-[0.5rem] text-[0.5rem]">
-                        <div>Network cost</div>
-                        <div>$2.71</div>
-                    </div>
+                    {/*<div className="flex justify-between mt-[0.5rem] text-[0.5rem]">*/}
+                    {/*    <div>Network cost</div>*/}
+                    {/*    <div>$2.71</div>*/}
+                    {/*</div>*/}
 
                     <div className="flex justify-center mt-[1rem]">
                         <button className="btn bg-[#0337FFCC] text-white w-[80%]" onClick={handleClick}>Swap</button>

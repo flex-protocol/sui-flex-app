@@ -16,6 +16,8 @@ import {parseSui} from "../../utils/tools";
 import TxToast from "@/components/ui/TxToast";
 import toast from "react-hot-toast";
 import coinInfo from "@/data/coin";
+import {SuiPriceServiceConnection} from "@pythnetwork/pyth-sui-js";
+
 
 export default function Swap() {
 
@@ -36,6 +38,9 @@ export default function Swap() {
     const [swapRate, setSwapRate] = useState(0);
     const [slippage, setSlippage] = useState(0.5);
     const [yreserve, setYreserve] = useState(0);
+    const [suiPrice, setSuiPrice] = useState(0);
+    const [inputTokenXPrice, setInputTokenXPrice] = useState(0);
+    const [inputTokenYPrice, setInputTokenYPrice] = useState(0);
     const [resultHash, setResultHash] = useState('');
 
 
@@ -45,6 +50,15 @@ export default function Swap() {
 
     async function initData() {
         setAllExchanges((await getAllExchanges()).data);
+
+        const connection = new SuiPriceServiceConnection(
+            "https://hermes.pyth.network"
+        );
+        const priceIds = [
+            "0x23d7315113f5b1d3ba7a83604c44b94d79f4fd69af77f804fc7f920a6dc65744",
+        ];
+        const priceFeeds = await connection.getLatestPriceFeeds(priceIds);
+        setSuiPrice((priceFeeds[0].getPriceNoOlderThan(60).price / (10 ** 8)).toFixed(2))
     }
 
     const handleXAmountChange = async (e) => {
@@ -57,11 +71,11 @@ export default function Swap() {
         // arrangeCollectionsByTradingPair()
     };
 
-    async function queryPairAndAmountOut(_amountValue, tokenX, tokenY, _slippage) {
+    async function queryPair(tokenX, tokenY) {
         const {tokenPairs, swapType: _swapType} = queryTokenPairs(tokenX, tokenY)
         if (tokenPairs === '') {
             setInputYAmount(0)
-            return
+            return {}
         }
         const client = new SuiClient({
             url: getFullnodeUrl('testnet'),
@@ -71,6 +85,13 @@ export default function Swap() {
             // fetch the object content field
             options: {showContent: true},
         });
+        return {txn, _swapType}
+    }
+
+    async function queryPairAndAmountOut(_amountValue, tokenX, tokenY, _slippage) {
+
+        const {txn, _swapType} = await queryPair(tokenX, tokenY)
+        setSwapType(_swapType)
         console.log('handleXAmountChange', txn)
         // console.log("txn", txn)
         // console.log("txn", txn.data.content.fields.x_reserve)
@@ -133,11 +154,9 @@ export default function Swap() {
 
             if (tempTokenX === tokenX && tempTokenY === tokenY) {
                 tokenPairs = item.tokenPairs[0]
-                setSwapType('swap_x')
                 return {tokenPairs, swapType: 'swap_x'}
             } else if (tempTokenX === tokenY && tempTokenY === tokenX) {
                 tokenPairs = item.tokenPairs[0]
-                setSwapType('swap_y')
                 return {tokenPairs: tokenPairs, swapType: 'swap_y'}
             }
         }
@@ -162,6 +181,7 @@ export default function Swap() {
             return
         }
         const {tokenPairs, swapType} = queryTokenPairs(selectTokenX, selectTokenY)
+        setSwapType(swapType)
         if (tokenPairs === '') {
             toast.custom(<TxToast title="don't have pool" digest={""}/>);
             return;
@@ -355,7 +375,7 @@ export default function Swap() {
         for (const item of tokenBalance) {
             balance = balance + parseInt(item.balance)
         }
-        return balance / (10 ** coinInfo[selectToken].decimals)
+        return (balance / (10 ** coinInfo[selectToken].decimals)).toFixed(2)
     }
 
     function inputMaxAmount(tokenXOrY) {
@@ -395,7 +415,6 @@ export default function Swap() {
             setSelectTokenY(tokenInfo)
             const result = await getCoins(tokenInfo)
             setSelectTokenYBalance(result)
-            // queryTokenPairs(selectTokenX, tokenInfo)
             if (selectTokenX !== '') {
                 // 只能从x到y,没有开发y到x的兑换量
                 queryPairAndAmountOut(inputXAmount * (10 ** coinInfo[tokenInfo].decimals), selectTokenX, tokenInfo, slippage)
@@ -409,6 +428,33 @@ export default function Swap() {
         document.getElementById('select_asset_modal').showModal()
     }
 
+    async function calculateInputPrice(amount, selectToken, xOrY) {
+        let result = 0
+        if (selectToken === '') {
+            result = 0
+        } else if (selectToken === '0000000000000000000000000000000000000000000000000000000000000002::sui::SUI') {
+            result = amount * suiPrice
+        } else {
+            const {txn, _swapType} = await queryPair('0000000000000000000000000000000000000000000000000000000000000002::sui::SUI', selectToken)
+            const amountOut = await calculateSwapAmountOut(txn.data.content.fields.y_reserve, txn.data.content.fields.x_reserve, amount * (10 ** coinInfo[selectToken].decimals));
+            // await queryPairAndAmountOut(1000000000, '0000000000000000000000000000000000000000000000000000000000000002::sui::SUI', selectToken, 0)
+            console.log('resultresult', amountOut.data)
+            result = amountOut.data / (10 ** 9) * suiPrice
+        }
+        if (xOrY === 'X') {
+            setInputTokenXPrice(result.toFixed(2))
+        } else {
+            setInputTokenYPrice(result.toFixed(2))
+        }
+    }
+
+    useEffect(() => {
+        calculateInputPrice(inputXAmount, selectTokenX, 'X')
+    }, [selectTokenX, inputXAmount]);
+
+    useEffect(() => {
+        calculateInputPrice(inputYAmount, selectTokenY, 'Y')
+    }, [selectTokenY, inputYAmount]);
 
     return (
         <>
@@ -449,7 +495,7 @@ export default function Swap() {
                                     <button className="btn text-white bg-[#0337ffcc] border-none ml-[0.25rem]" onClick={() => inputMaxAmount('X')}>Max</button>
                                 </div>
                                 <div className="flex justify-between text-[0.5rem] text-[#808080] mt-[0.5rem]">
-                                    <span>$0</span><span>Balance:{calculateBalance(selectTokenXBalance, selectTokenX)}</span>
+                                    <span>{'$ ' + inputTokenXPrice}</span><span>Balance:{calculateBalance(selectTokenXBalance, selectTokenX)}</span>
                                 </div>
                             </div>
                             <div className="mx-[2rem]">
@@ -466,7 +512,7 @@ export default function Swap() {
                                     <button className="btn text-white bg-[#0337ffcc] border-none ml-[0.25rem]" onClick={() => inputMaxAmount('Y')}>Max</button>
                                 </div>
                                 <div className="flex justify-between text-[0.5rem] text-[#808080] mt-[0.5rem]">
-                                    <span>$0</span><span>Balance:{calculateBalance(selectTokenYBalance, selectTokenY)}</span>
+                                    <span>{'$ ' + inputTokenYPrice}</span><span>Balance:{calculateBalance(selectTokenYBalance, selectTokenY)}</span>
                                 </div>
                             </div>
                         </div>
@@ -483,7 +529,7 @@ export default function Swap() {
                     </div>
                     <button className="btn bg-[#3556D5] border-none text-white" onClick={() => openModal()}>Preview</button>
                     <ChainResult title={selectAction === 'SWAP' ? "Swap submitted" : selectAction === 'ADDLIQUIDITY' ? "Add liquidity submitted" : "Create pool submitted"} inputX={inputXAmount} inputY={inputYAmount} inputXToken={selectTokenX === "" ? "" : selectTokenX.split("::")[2]} inputYToken={selectTokenY === "" ? "" : selectTokenY.split("::")[2]} resultHash={resultHash}/>
-                    <TransactionOverview handleClick={doAction} inputX={inputXAmount} inputY={inputYAmount} inputXToken={selectTokenX === "" ? "" : selectTokenX.split("::")[2]} inputYToken={selectTokenY === "" ? "" : selectTokenY.split("::")[2]} slippage={slippage} impact={(inputYAmount * (10 ** coinInfo[selectTokenY].decimals) / yreserve * 100).toFixed(2)}/>
+                    <TransactionOverview handleClick={doAction} inputX={inputXAmount} inputY={inputYAmount} inputXToken={selectTokenX === "" ? "" : selectTokenX.split("::")[2]} inputYToken={selectTokenY === "" ? "" : selectTokenY.split("::")[2]} slippage={slippage} impact={(inputYAmount * (10 ** coinInfo[selectTokenY].decimals) / yreserve * 100).toFixed(2)} inputTokenXPrice={inputTokenXPrice} inputTokenYPrice={inputTokenYPrice} tokenXBalance={calculateBalance(selectTokenXBalance, selectTokenX)} tokenYBalance={calculateBalance(selectTokenYBalance, selectTokenY)}/>
                     <AddLiquidityTransactionOverview handleClick={doAction} inputX={inputXAmount} inputY={inputYAmount} inputXToken={selectTokenX === "" ? "" : selectTokenX.split("::")[2]} inputYToken={selectTokenY === "" ? "" : selectTokenY.split("::")[2]} swapRate={swapRate}/>
                     <SelectAsset handleClick={selectToken}/>
                 </div>

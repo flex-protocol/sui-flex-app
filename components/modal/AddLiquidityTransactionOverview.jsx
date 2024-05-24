@@ -61,12 +61,12 @@ export default function TransactionOverview({handleClick, inputX,inputY,inputXTo
                         <div>SUI Network</div>
                     </div>
 
-                    <div className="flex justify-between mt-[0.5rem] text-[0.5rem]">
-                        <div>Network cost</div>
-                        <div className='flex items-center'>
-                            <Image className='mr-[0.1rem]' src='/gas.svg' width={20} height={20}></Image>
-                            $2.71</div>
-                    </div>
+                    {/*<div className="flex justify-between mt-[0.5rem] text-[0.5rem]">*/}
+                    {/*    <div>Network cost</div>*/}
+                    {/*    <div className='flex items-center'>*/}
+                    {/*        <Image className='mr-[0.1rem]' src='/gas.svg' width={20} height={20}></Image>*/}
+                    {/*        $2.71</div>*/}
+                    {/*</div>*/}
 
                     <div className="flex justify-center mt-[1rem]">
                         <button className="btn bg-[#0337FFCC] text-white w-[80%]" onClick={handleClick}>Add Liquidity</button>
