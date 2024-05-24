@@ -12,7 +12,7 @@ export default function TransactionOverview({handleClick}) {
                     <div className='my-[0.5rem] py-[0.25rem] px-[0.25rem] rounded-[1rem]'><input className='py-[0.5rem] px-[0.5rem] w-[90%] rounded-[1rem]' type="text" placeholder="Search Name or Address"/></div>
                     <div className="flex items-center mt-[1rem] cursor-pointer ml-[1rem]" onClick={() => handleClick("0000000000000000000000000000000000000000000000000000000000000002::sui::SUI")}>
                         <div className="mr-[1rem]">
-                            <Image src="/cat.svg" width={40} height={40}></Image>
+                            <Image src="/icon/sui.svg" width={40} height={40}></Image>
                         </div>
                         <div>
                             <div>

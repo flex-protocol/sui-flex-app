@@ -59,7 +59,9 @@ export default function TransactionOverview({handleClick, inputX, inputY, inputX
                     </div>
                     <div className="flex justify-between mt-[0.5rem] text-[0.55rem]">
                         <div>Network</div>
-                        <div>SUI Network</div>
+                        <div className="flex">
+                            SUI Network
+                            <Image className="ml-[0.2rem]" src="/icon/sui.svg" width={15} height={15}></Image></div>
                     </div>
 
                     {/*<div className="flex justify-between mt-[0.5rem] text-[0.5rem]">*/}
