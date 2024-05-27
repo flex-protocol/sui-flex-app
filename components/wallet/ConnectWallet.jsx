@@ -9,10 +9,6 @@ export default function ConnectWallet({isFirstPage}) {
   const [showModal, setShowModal] = useState(false);
   const wallet = useWallet();
 
-  useEffect(() => {
-    console.log('isFirstPage', isFirstPage)
-  }, []);
-
   return (
     <ConnectModal
       open={showModal}

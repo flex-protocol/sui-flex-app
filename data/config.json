@@ -1,0 +1,12 @@
+{
+  "m2Url": "https://sui.devnet.m2.movementlabs.xyz",
+  "sui:testnetUrl": "testnet",
+  "sui:devnetUrl": "devnet",
+  "sui:mainnet": "mainnet",
+  "sui:testnetCORE_PACKAGE_ID": "0x7d6ed7690d4501cc83f1bdab01e45738022890da4030eee655cdbcb985a6f072",
+  "m2CORE_PACKAGE_ID": "0x71ec440c694153474dd2a9c5c19cf60e2968d1af51aacfa24e34ee96a2df44dd",
+  "sui:testnetCORE_PACKAGE_ID_NOT_OX": "7d6ed7690d4501cc83f1bdab01e45738022890da4030eee655cdbcb985a6f072",
+  "m2CORE_PACKAGE_ID_NOT_OX": "71ec440c694153474dd2a9c5c19cf60e2968d1af51aacfa24e34ee96a2df44dd",
+  "sui:testnetExplorer": "https://suiscan.xyz/testnet/tx/",
+  "m2Explorer": "https://explorer.sui.devnet.m2.movementlabs.xyz/txblock/"
+}

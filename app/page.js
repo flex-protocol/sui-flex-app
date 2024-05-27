@@ -10,7 +10,7 @@ export default function Home() {
                 <div className="text-[1.5rem] text-[#030201] mt-[2.5rem] mb-[2.5rem]">
                     Supported Features \Move-native
                 </div>
-                <Image src='/TradePoolButtom.png' width={600} height={400}></Image>
+                <Image alt='' src='/TradePoolButtom.png' width={600} height={400}></Image>
             </div>
             <div className="border ml-[1.25rem] rounded-l-[1rem] bg-[#f1fbc4] pl-[3.19rem] mt-[2.5rem]">
                 <div className="font-['twkemono-bold'] text-[#030201] text-[2rem] mt-[2.5rem]">Support for Multiple Token Types</div>

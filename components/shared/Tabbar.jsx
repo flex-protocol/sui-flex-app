@@ -42,7 +42,7 @@ export default function Tabbar() {
             <footer className={`absolute w-[100%] ${pathname ==='/'?'bottom-6':'bottom-0'}`}>
                 {pathname !== '/' ?
                     <div className="flex justify-center">
-                        <Image src="/cat.svg" width={200} height={200}></Image>
+                        <Image alt='' src="/cat.svg" width={200} height={200}></Image>
                     </div>
                     :
                     <div className="flex justify-around">

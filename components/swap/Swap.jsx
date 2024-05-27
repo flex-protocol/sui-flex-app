@@ -7,7 +7,7 @@ import {getFullnodeUrl, SuiClient} from '@mysten/sui.js/client';
 import {getAllExchanges} from "@/actions/ftassets.action";
 import {calculateSwapAmountOut} from "../../actions/ftassets.action";
 import {TransactionBlock} from "@mysten/sui.js/transactions";
-import {COIN_TYPE, CORE_PACKAGE_ID, CORE_PACKAGE_ID_NOT_OX} from "../../constant";
+import {COIN_TYPE} from "../../constant";
 import TransactionOverview from "@/components/modal/TransactionOverview";
 import AddLiquidityTransactionOverview from "@/components/modal/AddLiquidityTransactionOverview";
 import SelectAsset from "@/components/modal/SelectAsset";
@@ -16,6 +16,7 @@ import {parseSui} from "../../utils/tools";
 import TxToast from "@/components/ui/TxToast";
 import toast from "react-hot-toast";
 import coinInfo from "@/data/coin";
+import config from "@/data/config";
 import {SuiPriceServiceConnection} from "@pythnetwork/pyth-sui-js";
 
 
@@ -42,11 +43,25 @@ export default function Swap() {
     const [inputTokenXPrice, setInputTokenXPrice] = useState(0);
     const [inputTokenYPrice, setInputTokenYPrice] = useState(0);
     const [resultHash, setResultHash] = useState('');
+    const [currentChain, setCurrentChain] = useState("sui:testnet");
+    const [isLoading, setIsLoading] = useState(false);
 
 
     useEffect(() => {
+        // console.log('account.chains', wallet,account,wallet.address)
         initData()
     }, []);
+    useEffect(() => {
+        if (wallet.account !== undefined) {
+            console.log('wallet', wallet)
+            if (wallet.account.chains[0] === "sui:unknown") {
+                setCurrentChain('m2')
+            } else {
+                setCurrentChain(wallet.account.chains[0])
+            }
+        }
+        initData()
+    }, [wallet]);
 
     async function initData() {
         setAllExchanges((await getAllExchanges()).data);
@@ -67,7 +82,7 @@ export default function Swap() {
         if (selectTokenX === '' || selectTokenY === "") {
             return
         }
-        queryPairAndAmountOut(parseInt(e.target.value * (10 ** coinInfo[selectTokenX].decimals)), selectTokenX, selectTokenY, slippage)
+        queryPairAndAmountOut(parseInt(e.target.value * (10 ** coinInfo[currentChain][selectTokenX].decimals)), selectTokenX, selectTokenY, slippage)
         // arrangeCollectionsByTradingPair()
     };
 
@@ -77,8 +92,13 @@ export default function Swap() {
             setInputYAmount(0)
             return {}
         }
+        // const client = new SuiClient({
+        //     url: getFullnodeUrl('testnet'),
+        // });
+        //
+        // console.log('config[currentChain + "Url"]', config[currentChain + "Url"])
         const client = new SuiClient({
-            url: getFullnodeUrl('testnet'),
+            url: currentChain === 'm2' ? config[currentChain + "Url"] : getFullnodeUrl(config[currentChain + "Url"]),
         });
         const txn = await client.getObject({
             id: tokenPairs,
@@ -106,7 +126,7 @@ export default function Swap() {
                 setSwapRate(txn.data.content.fields.y_reserve / txn.data.content.fields.x_reserve)
                 setYreserve(txn.data.content.fields.x_reserve)
             }
-            const result = (amountOut.data * (1 - _slippage * 0.01)) / (10 ** coinInfo[tokenY].decimals)
+            const result = (amountOut.data * (1 - _slippage * 0.01)) / (10 ** coinInfo[currentChain][tokenY].decimals)
             console.log('resultresult', result)
             setInputYAmount(result === undefined ? 0 : result.toFixed(2))
         } else if (selectAction === 'ADDLIQUIDITY') {
@@ -116,7 +136,7 @@ export default function Swap() {
                 amountOut = Math.floor(txn.data.content.fields.x_reserve / txn.data.content.fields.y_reserve * _amountValue)
             }
             // console.log('amountOut', amountOut)
-            setInputYAmount(amountOut / (10 ** coinInfo[tokenY].decimals))
+            setInputYAmount(amountOut / (10 ** coinInfo[currentChain][tokenY].decimals))
         }
     }
 
@@ -126,7 +146,7 @@ export default function Swap() {
 
     const handleSlippageChange = async (e) => {
         setSlippage(e.target.value)
-        queryPairAndAmountOut(inputXAmount * (10 ** coinInfo[selectTokenX].decimals), selectTokenX, selectTokenY, e.target.value)
+        queryPairAndAmountOut(inputXAmount * (10 ** coinInfo[currentChain][selectTokenX].decimals), selectTokenX, selectTokenY, e.target.value)
     };
 
     function queryBalanceObj(tokenBalance, inputAmount) {
@@ -186,8 +206,8 @@ export default function Swap() {
             toast.custom(<TxToast title="don't have pool" digest={""}/>);
             return;
         }
-        let XAmount = parseInt(inputXAmount * (10 ** coinInfo[selectTokenX].decimals))
-        let YAmount = parseInt(inputYAmount * (10 ** coinInfo[selectTokenY].decimals))
+        let XAmount = parseInt(inputXAmount * (10 ** coinInfo[currentChain][selectTokenX].decimals))
+        let YAmount = parseInt(inputYAmount * (10 ** coinInfo[currentChain][selectTokenY].decimals))
         if (selectAction === 'SWAP') {
             swap(tokenPairs, swapType, XAmount, YAmount)
         } else if (selectAction === 'ADDLIQUIDITY') {
@@ -211,6 +231,7 @@ export default function Swap() {
         return splitXCoin;
     }
 
+    // todo 没有这个币的话要创建个0的objectid
     function doSplitYCoin(txb, XAmount, YAmount) {
         let splitYCoin = ''
         if (selectTokenY === '0000000000000000000000000000000000000000000000000000000000000002::sui::SUI') {
@@ -242,14 +263,13 @@ export default function Swap() {
             ]
             console.log('param', param, COIN_TYPE)
             txb.moveCall({
-                target: `${CORE_PACKAGE_ID}::token_pair_service::${swapType}`,
+                target: `${config[currentChain + "CORE_PACKAGE_ID"]}::token_pair_service::${swapType}`,
                 arguments: param,
-                typeArguments: [COIN_TYPE, `${CORE_PACKAGE_ID_NOT_OX}::example_coin::EXAMPLE_COIN`]
+                typeArguments: [COIN_TYPE, `${config[currentChain + "CORE_PACKAGE_ID_NOT_OX"]}::example_coin::EXAMPLE_COIN`]
             });
             if (selectTokenY === '0000000000000000000000000000000000000000000000000000000000000002::sui::SUI') {
                 txb.transferObjects([splitYCoin], txb.pure.address(account.address))
             }
-
             const res = await signAndExecuteTransactionBlock({
                 transactionBlock: txb,
             });
@@ -331,9 +351,9 @@ export default function Swap() {
             }
             console.log('param', param, COIN_TYPE)
             txb.moveCall({
-                target: `${CORE_PACKAGE_ID}::token_pair_service::add_liquidity`,
+                target: `${config[currentChain + "CORE_PACKAGE_ID"]}::token_pair_service::add_liquidity`,
                 arguments: param,
-                typeArguments: [COIN_TYPE, `${CORE_PACKAGE_ID_NOT_OX}::example_coin::EXAMPLE_COIN`]
+                typeArguments: [COIN_TYPE, `${config[currentChain + "CORE_PACKAGE_ID_NOT_OX"]}::example_coin::EXAMPLE_COIN`]
             });
 
             const res = await signAndExecuteTransactionBlock({
@@ -353,14 +373,14 @@ export default function Swap() {
     }
 
     function closeLiquidityModal() {
-        if (document.getElementById('add_liquidity_transaction_overview_modal') === null){
+        if (document.getElementById('add_liquidity_transaction_overview_modal') === null) {
             return
         }
         document.getElementById('add_liquidity_transaction_overview_modal').close()
     }
 
     function closeSwapModal() {
-        if (document.getElementById('transaction_overview_modal') === null){
+        if (document.getElementById('transaction_overview_modal') === null) {
             return
         }
         document.getElementById('transaction_overview_modal').close()
@@ -368,9 +388,13 @@ export default function Swap() {
 
 
     async function getCoins(coinAddress) {
+        // const client = new SuiClient({
+        //     url: getFullnodeUrl(account.chains[0].split(":")[1]),
+        // });
         const client = new SuiClient({
-            url: getFullnodeUrl(account.chains[0].split(":")[1]),
+            url: currentChain === 'm2' ? config[currentChain + "Url"] : getFullnodeUrl(config[currentChain + "Url"]),
         });
+
         const txn2 = await client.getCoins({
             owner: account.address,
             coinType: coinAddress
@@ -388,7 +412,7 @@ export default function Swap() {
         for (const item of tokenBalance) {
             balance = balance + parseInt(item.balance)
         }
-        return (balance / (10 ** coinInfo[selectToken].decimals)).toFixed(2)
+        return (balance / (10 ** coinInfo[currentChain][selectToken].decimals)).toFixed(2)
     }
 
     function inputMaxAmount(tokenXOrY) {
@@ -398,7 +422,7 @@ export default function Swap() {
             }
             const balanceX = calculateBalance(selectTokenXBalance, selectTokenX)
             setInputXAmount(balanceX)
-            queryPairAndAmountOut(balanceX * (10 ** coinInfo[selectTokenX].decimals), selectTokenX, selectTokenY, slippage)
+            queryPairAndAmountOut(balanceX * (10 ** coinInfo[currentChain][selectTokenX].decimals), selectTokenX, selectTokenY, slippage)
         } else {
             if (selectTokenY === '') {
                 return
@@ -417,12 +441,13 @@ export default function Swap() {
     }
 
     async function selectToken(tokenInfo) {
+        setIsLoading(true)
         if (selectTokenAsset === 'tokenx') {
             setSelectTokenX(tokenInfo)
             const result = await getCoins(tokenInfo)
             setSelectTokenXBalance(result)
             if (selectTokenY !== '') {
-                queryPairAndAmountOut(inputXAmount * (10 ** coinInfo[tokenInfo].decimals), tokenInfo, selectTokenY, slippage)
+                queryPairAndAmountOut(inputXAmount * (10 ** coinInfo[currentChain][tokenInfo].decimals), tokenInfo, selectTokenY, slippage)
             }
         } else {
             setSelectTokenY(tokenInfo)
@@ -430,9 +455,10 @@ export default function Swap() {
             setSelectTokenYBalance(result)
             if (selectTokenX !== '') {
                 // 只能从x到y,没有开发y到x的兑换量
-                queryPairAndAmountOut(inputXAmount * (10 ** coinInfo[tokenInfo].decimals), selectTokenX, tokenInfo, slippage)
+                queryPairAndAmountOut(inputXAmount * (10 ** coinInfo[currentChain][tokenInfo].decimals), selectTokenX, tokenInfo, slippage)
             }
         }
+        setIsLoading(false)
         document.getElementById('select_asset_modal').close()
     }
 
@@ -449,7 +475,7 @@ export default function Swap() {
             result = amount * suiPrice
         } else {
             const {txn, _swapType} = await queryPair('0000000000000000000000000000000000000000000000000000000000000002::sui::SUI', selectToken)
-            const amountOut = await calculateSwapAmountOut(txn.data.content.fields.y_reserve, txn.data.content.fields.x_reserve, amount * (10 ** coinInfo[selectToken].decimals));
+            const amountOut = await calculateSwapAmountOut(txn.data.content.fields.y_reserve, txn.data.content.fields.x_reserve, amount * (10 ** coinInfo[currentChain][selectToken].decimals));
             // await queryPairAndAmountOut(1000000000, '0000000000000000000000000000000000000000000000000000000000000002::sui::SUI', selectToken, 0)
             console.log('resultresult', amountOut.data)
             result = amountOut.data / (10 ** 9) * suiPrice
@@ -482,7 +508,7 @@ export default function Swap() {
                             <div className="dropdown dropdown-hover bg-[#fbf2c4] rounded-[1rem]">
                                 <div tabIndex={0} role="button" className="text-[1rem] font-[700] mx-[1.5rem] mt-[0.5rem] bg-[#fbf2c4] flex flex-col justify-center items-center w-[10rem]">
                                     <div className="mb-[1rem] mt-[0.5rem] font-['twkemono-bold']">{selectAction === 'ADDLIQUIDITY' ? 'ADD LIQUIDITY' : selectAction}</div>
-                                    <Image className="mb-[1rem]" src="/downbold.svg" width={20} height={20}></Image>
+                                    <Image alt='' className="mb-[1rem]" src="/downbold.svg" width={20} height={20}></Image>
                                 </div>
                                 <ul tabIndex={0} className="dropdown-content z-[1] menu p-2 shadow bg-base-100 rounded-box w-52 bg-[#fbf2c4]">
                                     <li onClick={() => handleActionChange('SWAP')}><a>SWAP</a></li>
@@ -503,7 +529,7 @@ export default function Swap() {
                                     {/*<span className="text-white mr-[50px]">Asset</span>*/}
                                     <div onClick={() => openAssetModal('tokenx')} className="text-white bg-[#808080] py-[10px] rounded-[0.5rem] px-[8px] flex items-center cursor-pointer w-[10rem]">
                                         <span className="mr-[0.25rem]">{selectTokenX === '' ? 'Select Token' : selectTokenX.split("::")[2]}</span>
-                                        <Image src="/down.svg" width={20} height={20}></Image>
+                                        <Image alt='' src="/down.svg" width={20} height={20}></Image>
                                     </div>
                                     <button className="btn text-white bg-[#0337ffcc] border-none ml-[0.25rem]" onClick={() => inputMaxAmount('X')}>Max</button>
                                 </div>
@@ -512,7 +538,7 @@ export default function Swap() {
                                 </div>
                             </div>
                             <div className="mx-[2rem]">
-                                {selectAction === 'SWAP' ?<Image src="/toright.svg" width={100} height={50}></Image>:<Image src="/PlusPair.svg" width={100} height={50}></Image>}
+                                {selectAction === 'SWAP' ? <Image alt='' src="/toright.svg" width={100} height={50}></Image> : <Image src="/PlusPair.svg" width={100} height={50}></Image>}
                             </div>
                             <div className="pl-[1rem] py-[0.5rem] mr-[1rem]">
                                 <div className="mb-[0.25rem]  font-[400]">{selectAction === 'SWAP' ? 'You Receive' : 'Select Asset'}</div>
@@ -520,7 +546,7 @@ export default function Swap() {
                                     <input type="text" className="mr-[0.5rem]  bg-[#323232] text-white focus:outline-none" onChange={handleYAmountChange} value={inputYAmount} placeholder="Asset"/>
                                     <div onClick={() => openAssetModal('tokeny')} className="text-white bg-[#808080] py-[10px] rounded-[0.5rem] px-[8px] flex items-center cursor-pointer w-[10rem]">
                                         <span className="mr-[0.25rem]">{selectTokenY === '' ? 'Select Token' : selectTokenY.split("::")[2]}</span>
-                                        <Image src="/down.svg" width={20} height={20}></Image>
+                                        <Image alt='' src="/down.svg" width={20} height={20}></Image>
                                     </div>
                                     <button className="btn text-white bg-[#0337ffcc] border-none ml-[0.25rem]" onClick={() => inputMaxAmount('Y')}>Max</button>
                                 </div>
@@ -541,10 +567,13 @@ export default function Swap() {
                         </div>}
                     </div>
                     <button className="btn bg-[#3556D5] border-none text-white" onClick={() => openModal()}>Preview</button>
-                    <ChainResult title={selectAction === 'SWAP' ? "Swap submitted" : selectAction === 'ADDLIQUIDITY' ? "Add liquidity submitted" : "Create pool submitted"} inputX={inputXAmount} inputY={inputYAmount} inputXToken={selectTokenX === "" ? "" : selectTokenX.split("::")[2]} inputYToken={selectTokenY === "" ? "" : selectTokenY.split("::")[2]} resultHash={resultHash}/>
-                    <TransactionOverview handleClick={doAction} inputX={inputXAmount} inputY={inputYAmount} inputXToken={selectTokenX === "" ? "" : selectTokenX.split("::")[2]} inputYToken={selectTokenY === "" ? "" : selectTokenY.split("::")[2]} slippage={slippage} impact={(inputYAmount * (10 ** coinInfo[selectTokenY].decimals) / yreserve * 100).toFixed(2)} inputTokenXPrice={inputTokenXPrice} inputTokenYPrice={inputTokenYPrice} tokenXBalance={calculateBalance(selectTokenXBalance, selectTokenX)} tokenYBalance={calculateBalance(selectTokenYBalance, selectTokenY)} closeClick={closeSwapModal}/>
-                    <AddLiquidityTransactionOverview handleClick={doAction} inputX={inputXAmount} inputY={inputYAmount} inputXToken={selectTokenX === "" ? "" : selectTokenX.split("::")[2]} inputYToken={selectTokenY === "" ? "" : selectTokenY.split("::")[2]} swapRate={swapRate} inputTokenXPrice={inputTokenXPrice} inputTokenYPrice={inputTokenYPrice} tokenXBalance={calculateBalance(selectTokenXBalance, selectTokenX)} tokenYBalance={calculateBalance(selectTokenYBalance, selectTokenY)} closeClick={closeLiquidityModal}/>
-                    <SelectAsset handleClick={selectToken}/>
+                    <ChainResult title={selectAction === 'SWAP' ? "Swap submitted" : selectAction === 'ADDLIQUIDITY' ? "Add liquidity submitted" : "Create pool submitted"} inputX={inputXAmount} inputY={inputYAmount} inputXToken={selectTokenX === "" ? "" : selectTokenX.split("::")[2]} inputYToken={selectTokenY === "" ? "" : selectTokenY.split("::")[2]} resultHash={resultHash} currentChain={currentChain}/>
+                    <TransactionOverview handleClick={doAction} inputX={inputXAmount} inputY={inputYAmount} inputXToken={selectTokenX === "" ? "" : selectTokenX.split("::")[2]} inputYToken={selectTokenY === "" ? "" : selectTokenY.split("::")[2]} slippage={slippage} impact={(inputYAmount * (10 ** coinInfo[currentChain][selectTokenY].decimals) / yreserve * 100).toFixed(2)} inputTokenXPrice={inputTokenXPrice} inputTokenYPrice={inputTokenYPrice}
+                                         tokenXBalance={calculateBalance(selectTokenXBalance, selectTokenX)}
+                                         tokenYBalance={calculateBalance(selectTokenYBalance, selectTokenY)} closeClick={closeSwapModal}/>
+                    <AddLiquidityTransactionOverview handleClick={doAction} inputX={inputXAmount} inputY={inputYAmount} inputXToken={selectTokenX === "" ? "" : selectTokenX.split("::")[2]} inputYToken={selectTokenY === "" ? "" : selectTokenY.split("::")[2]} swapRate={swapRate} inputTokenXPrice={inputTokenXPrice} inputTokenYPrice={inputTokenYPrice} tokenXBalance={calculateBalance(selectTokenXBalance, selectTokenX)} tokenYBalance={calculateBalance(selectTokenYBalance, selectTokenY)}
+                                                     closeClick={closeLiquidityModal}/>
+                    <SelectAsset handleClick={selectToken} currentChain={currentChain} isLoading={isLoading}/>
                 </div>
             </div>
         </>

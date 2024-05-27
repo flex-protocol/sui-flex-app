@@ -1,0 +1,26 @@
+{
+  "0x71ec440c694153474dd2a9c5c19cf60e2968d1af51aacfa24e34ee96a2df44dd::example_coin::EXAMPLE_COIN": {
+    "decimals": 2,
+    "name": "",
+    "symbol": "EXAMPLE",
+    "description": "",
+    "iconUrl": null,
+    "id": "0x518a88541c77465eedaf77b4253efa56d7935fca80e805b5c77690a9ee929266"
+  },
+  "0000000000000000000000000000000000000000000000000000000000000002::sui::SUI": {
+    "decimals": 9,
+    "name": "Sui",
+    "symbol": "SUI",
+    "description": "",
+    "iconUrl": null,
+    "id": "0x587c29de216efd4219573e08a1f6964d4fa7cb714518c2c8a0f29abfa264327d"
+  },
+  "": {
+    "decimals": 1,
+    "name": "",
+    "symbol": "",
+    "description": "",
+    "iconUrl": null,
+    "id": ""
+  }
+}

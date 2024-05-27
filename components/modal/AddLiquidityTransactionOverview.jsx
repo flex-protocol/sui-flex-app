@@ -9,7 +9,7 @@ export default function AddLiquidityTransactionOverview({handleClick, inputX,inp
             <dialog id="add_liquidity_transaction_overview_modal" className="modal">
                 <div className="modal-box">
                     <div className="flex items-center">
-                        <Image onClick={closeClick} className="cursor-pointer" src="/close.svg" width={20} height={20}></Image>
+                        <Image alt='' onClick={closeClick} className="cursor-pointer" src="/close.svg" width={20} height={20}></Image>
                         <span className="ml-4">Transaction Overview</span></div>
                     <div className="mb-[0.5rem] mt-[1rem]">Pair Token 1</div>
 
@@ -62,7 +62,7 @@ export default function AddLiquidityTransactionOverview({handleClick, inputX,inp
                         <div>Network</div>
                         <div className="flex">
                             SUI Network
-                            <Image className="ml-[0.2rem]" src="/icon/sui.svg" width={15} height={15}></Image></div>
+                            <Image alt='' className="ml-[0.2rem]" src="/icon/sui.svg" width={15} height={15}></Image></div>
                     </div>
 
                     {/*<div className="flex justify-between mt-[0.5rem] text-[0.5rem]">*/}
