@@ -6,7 +6,6 @@ import coinInfo from "@/data/coin";
 
 export default function SelectAsset({handleClick,currentChain,isLoading}) {
 
-    console.log('coinInfo[currentChain]', coinInfo[currentChain])
     let keys = Object.keys(coinInfo[currentChain]);
 
     const assetList = keys.map((key) => (

@@ -56,15 +56,16 @@ export default function Swap() {
             console.log('wallet', wallet)
             if (wallet.account.chains[0] === "sui:unknown") {
                 setCurrentChain('m2')
+                initData('m2')
             } else {
                 setCurrentChain(wallet.account.chains[0])
+                initData(wallet.account.chains[0])
             }
         }
-        initData()
     }, [wallet]);
 
-    async function initData() {
-        setAllExchanges((await getAllExchanges()).data);
+    async function initData(_currentChain) {
+        setAllExchanges((await getAllExchanges(_currentChain)).data);
 
         const connection = new SuiPriceServiceConnection(
             "https://hermes.pyth.network"
@@ -111,6 +112,9 @@ export default function Swap() {
     async function queryPairAndAmountOut(_amountValue, tokenX, tokenY, _slippage) {
 
         const {txn, _swapType} = await queryPair(tokenX, tokenY)
+        if (txn === undefined) {
+            return
+        }
         setSwapType(_swapType)
         console.log('handleXAmountChange', txn)
         // console.log("txn", txn)
@@ -118,11 +122,11 @@ export default function Swap() {
         let amountOut;
         if (selectAction === 'SWAP') {
             if (swapType === 'swap_x' || _swapType === 'swap_x') {
-                amountOut = await calculateSwapAmountOut(txn.data.content.fields.x_reserve, txn.data.content.fields.y_reserve, _amountValue);
+                amountOut = await calculateSwapAmountOut(txn.data.content.fields.x_reserve, txn.data.content.fields.y_reserve, _amountValue, currentChain);
                 setSwapRate(txn.data.content.fields.x_reserve / txn.data.content.fields.y_reserve)
                 setYreserve(txn.data.content.fields.y_reserve)
             } else {
-                amountOut = await calculateSwapAmountOut(txn.data.content.fields.y_reserve, txn.data.content.fields.x_reserve, _amountValue);
+                amountOut = await calculateSwapAmountOut(txn.data.content.fields.y_reserve, txn.data.content.fields.x_reserve, _amountValue, currentChain);
                 setSwapRate(txn.data.content.fields.y_reserve / txn.data.content.fields.x_reserve)
                 setYreserve(txn.data.content.fields.x_reserve)
             }
@@ -149,11 +153,14 @@ export default function Swap() {
         queryPairAndAmountOut(inputXAmount * (10 ** coinInfo[currentChain][selectTokenX].decimals), selectTokenX, selectTokenY, e.target.value)
     };
 
-    function queryBalanceObj(tokenBalance, inputAmount) {
-        console.log('tokenBalance', tokenBalance, inputAmount)
+    function queryBalanceObj(tokenBalance, inputAmount, XorY) {
+        // console.log('tokenBalance', tokenBalance, inputAmount)
         for (const item of tokenBalance) {
+            if (XorY === 'Y') {
+                return item
+            }
             if (parseInt(item.balance) > inputAmount) {
-                console.log('item', item)
+                // console.log('item', item)
                 return item
             }
         }
@@ -221,30 +228,100 @@ export default function Swap() {
             splitXCoin = txb.splitCoins(txb.gas, [txb.pure(XAmount)]);
             return splitXCoin
         } else {
-            const tempBalanceObj = queryBalanceObj(selectTokenXBalance, XAmount)
+            const tempBalanceObj = queryBalanceObj(selectTokenXBalance, XAmount, "X")
             if (tempBalanceObj !== '') {
                 splitXCoin = tempBalanceObj.coinObjectId
             } else {
-                // todo 合并或报错
             }
         }
         return splitXCoin;
     }
 
-    // todo 没有这个币的话要创建个0的objectid
-    function doSplitYCoin(txb, XAmount, YAmount) {
+    async function doSplitYCoin(txb, XAmount, YAmount) {
+        console.log('selectTokenY', selectTokenY)
         let splitYCoin = ''
         if (selectTokenY === '0000000000000000000000000000000000000000000000000000000000000002::sui::SUI') {
             splitYCoin = txb.splitCoins(txb.gas, [txb.pure(YAmount)]);
         } else {
-            const tempBalanceObj = queryBalanceObj(selectTokenYBalance, YAmount)
+            const tempBalanceObj = queryBalanceObj(selectTokenYBalance, YAmount, 'Y')
             if (tempBalanceObj !== '') {
                 splitYCoin = tempBalanceObj.coinObjectId
             } else {
-                // todo 合并或报错
+                // 创建个0 objectid
+                // '0x71ec440c694153474dd2a9c5c19cf60e2968d1af51aacfa24e34ee96a2df44dd::example_coin::EXAMPLE_COIN'
+                await zero(selectTokenY, txb)
+                // await selectToken(selectTokenY)
+                let flag = true
+                while (flag) {
+                    const result = await getCoins(selectTokenY)
+                    if (result !== undefined && result !== null && result[0] !== undefined) {
+                        splitYCoin = result[0].coinObjectId
+                        flag = false
+                    }else {
+                        await new Promise(r => setTimeout(r, 500));
+                    }
+                }
+                // splitYCoin = doSplitYCoin(txb, XAmount, YAmount)
             }
         }
         return splitYCoin;
+    }
+
+
+    // async function zero() {
+    //     try {
+    //         const txb = new TransactionBlock();
+    //         const resultObjectId =txb.moveCall({
+    //             target: `0x2::coin::zero`,
+    //             arguments: [],
+    //             typeArguments: ['0x71ec440c694153474dd2a9c5c19cf60e2968d1af51aacfa24e34ee96a2df44dd::example_coin::EXAMPLE_COIN']
+    //         });
+    //         console.log('moveCallresult', resultObjectId)
+    //         txb.transferObjects([resultObjectId], txb.pure.address(account.address))
+    //         const res = await signAndExecuteTransactionBlock({
+    //             transactionBlock: txb,
+    //         });
+    //         console.log('chain result', res)
+    //         setResultHash(res.digest)
+    //         // document.getElementById('transaction_overview_modal').close()
+    //         // document.getElementById('my_modal_2').showModal()
+    //
+    //         // toast.custom(<TxToast title="Token added to sell pool successfully!" digest={res.digest} />);
+    //     } catch (error) {
+    //         console.log('swap error', error)
+    //         // if (error.message.includes("Rejected from user")) return toast.error("You rejected the request in your wallet.");
+    //         // toast.error(`Failed to add token to sell pool: ${error.message}.`);
+    //     }
+    // }
+
+    async function zero(typeArg, txb) {
+        console.log('selectTokenY', typeArg)
+        try {
+            const txb2 = new TransactionBlock();
+            const resultObjectId = txb2.moveCall({
+                target: `0x2::coin::zero`,
+                arguments: [],
+                typeArguments: [typeArg]
+            });
+            console.log('moveCallresult', resultObjectId)
+            txb2.transferObjects([resultObjectId], txb2.pure.address(account.address))
+            const res = await signAndExecuteTransactionBlock({
+                transactionBlock: txb2,
+            });
+            console.log('res', res, resultObjectId, txb2)
+            return resultObjectId
+
+            // console.log('chain result', res)
+            // setResultHash(res.digest)
+            // document.getElementById('transaction_overview_modal').close()
+            // document.getElementById('my_modal_2').showModal()
+
+            // toast.custom(<TxToast title="Token added to sell pool successfully!" digest={res.digest} />);
+        } catch (error) {
+            console.log('swap error', error)
+            // if (error.message.includes("Rejected from user")) return toast.error("You rejected the request in your wallet.");
+            // toast.error(`Failed to add token to sell pool: ${error.message}.`);
+        }
     }
 
     async function swap(tokenPairs, swapType, XAmount, YAmount) {
@@ -253,7 +330,7 @@ export default function Swap() {
             const txb = new TransactionBlock();
             txb.setGasBudget(100000000);
             const splitXCoin = doSplitXCoin(txb, XAmount, YAmount)
-            const splitYCoin = doSplitYCoin(txb, XAmount, YAmount)
+            const splitYCoin = await doSplitYCoin(txb, XAmount, YAmount)
             let param = [
                 txb.object(tokenPairs),
                 txb.object(splitXCoin),
@@ -284,7 +361,6 @@ export default function Swap() {
             // if (error.message.includes("Rejected from user")) return toast.error("You rejected the request in your wallet.");
             // toast.error(`Failed to add token to sell pool: ${error.message}.`);
         }
-
     }
 
 
@@ -328,7 +404,7 @@ export default function Swap() {
             const txb = new TransactionBlock();
             txb.setGasBudget(100000000);
             const splitXCoin = doSplitXCoin(txb, XAmount, YAmount)
-            const splitYCoin = doSplitYCoin(txb, XAmount, YAmount)
+            const splitYCoin = await doSplitYCoin(txb, XAmount, YAmount)
             let param = ''
             if (swapType === 'swap_x') {
                 param = [
@@ -475,7 +551,7 @@ export default function Swap() {
             result = amount * suiPrice
         } else {
             const {txn, _swapType} = await queryPair('0000000000000000000000000000000000000000000000000000000000000002::sui::SUI', selectToken)
-            const amountOut = await calculateSwapAmountOut(txn.data.content.fields.y_reserve, txn.data.content.fields.x_reserve, amount * (10 ** coinInfo[currentChain][selectToken].decimals));
+            const amountOut = await calculateSwapAmountOut(txn.data.content.fields.y_reserve, txn.data.content.fields.x_reserve, amount * (10 ** coinInfo[currentChain][selectToken].decimals), currentChain);
             // await queryPairAndAmountOut(1000000000, '0000000000000000000000000000000000000000000000000000000000000002::sui::SUI', selectToken, 0)
             console.log('resultresult', amountOut.data)
             result = amountOut.data / (10 ** 9) * suiPrice

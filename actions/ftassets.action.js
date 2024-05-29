@@ -1,24 +1,24 @@
 "use server";
 
 import axios from "axios";
+import config from "@/data/config";
 
 import { COIN_TYPE, offchainBaseUrl } from "@/constant";
 
-export async function getAllExchanges() {
+export async function getAllExchanges(currentChain) {
   try {
-    const { data } = await axios.get(`${offchainBaseUrl}/api/Exchanges`);
-    console.log('data', data)
+    const { data } = await axios.get(`${config[currentChain+'BaseUrl']}/api/Exchanges`);
     return { data, errMsg: "" };
   } catch (error) {
     return { data: null, errMsg: error.message };
   }
 }
 
-export async function calculateSwapAmountOut(xReserve,yReserve,xAmountIn) {
+export async function calculateSwapAmountOut(xReserve,yReserve,xAmountIn,currentChain) {
   try {
-    console.log('calculateSwapAmountOut', `${offchainBaseUrl}/api/utils/calculateSwapAmountOut?xReserve=${xReserve}&yReserve=${yReserve}&xAmountIn=${xAmountIn}&feeNumerator=3&feeDenominator=100`)
-    const { data } = await axios.get(`${offchainBaseUrl}/api/utils/calculateSwapAmountOut?xReserve=${xReserve}&yReserve=${yReserve}&xAmountIn=${xAmountIn}&feeNumerator=3&feeDenominator=100`);
-    console.log('calculateSwapAmountOut', data)
+    // console.log('calculateSwapAmountOut', `${offchainBaseUrl}/api/utils/calculateSwapAmountOut?xReserve=${xReserve}&yReserve=${yReserve}&xAmountIn=${xAmountIn}&feeNumerator=3&feeDenominator=100`)
+    const { data } = await axios.get(`${config[currentChain+'BaseUrl']}/api/utils/calculateSwapAmountOut?xReserve=${xReserve}&yReserve=${yReserve}&xAmountIn=${xAmountIn}&feeNumerator=3&feeDenominator=100`);
+    // console.log('calculateSwapAmountOut', data)
     return { data, errMsg: "" };
   } catch (error) {
     return { data: null, errMsg: error.message };

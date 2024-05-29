@@ -23,6 +23,6 @@ export const BUY_POOL_TYPE = 2;
 // Types, deprecate soon
 export const COIN_TYPE = "0x2::sui::SUI";
 
-// Offchain service baseUrl todo
+// Offchain service baseUrl
 // export const offchainBaseUrl = "https://sui-testnet-ft.api.flextech.xyz/";
-export const offchainBaseUrl = "https://m2-devnet-ft.api.flextech.xyz:443/";
+// export const offchainBaseUrl = "https://m2-devnet-ft.api.flextech.xyz:443/";
