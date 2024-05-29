@@ -45,6 +45,7 @@ export default function Swap() {
     const [resultHash, setResultHash] = useState('');
     const [currentChain, setCurrentChain] = useState("sui:testnet");
     const [isLoading, setIsLoading] = useState(false);
+    const [outputIsLoading, setOutputIsLoading] = useState(false);
 
 
     useEffect(() => {
@@ -111,6 +112,7 @@ export default function Swap() {
 
     async function queryPairAndAmountOut(_amountValue, tokenX, tokenY, _slippage) {
 
+        setOutputIsLoading(true)
         const {txn, _swapType} = await queryPair(tokenX, tokenY)
         if (txn === undefined) {
             return
@@ -142,6 +144,7 @@ export default function Swap() {
             // console.log('amountOut', amountOut)
             setInputYAmount(amountOut / (10 ** coinInfo[currentChain][tokenY].decimals))
         }
+        setOutputIsLoading(false)
     }
 
     const handleYAmountChange = async (e) => {
@@ -617,7 +620,10 @@ export default function Swap() {
                                 {selectAction === 'SWAP' ? <Image alt='' src="/toright.svg" width={100} height={50}></Image> : <Image src="/PlusPair.svg" width={100} height={50}></Image>}
                             </div>
                             <div className="pl-[1rem] py-[0.5rem] mr-[1rem]">
-                                <div className="mb-[0.25rem]  font-[400]">{selectAction === 'SWAP' ? 'You Receive' : 'Select Asset'}</div>
+                                <div className="mb-[0.25rem]  font-[400] flex">
+                                    {selectAction === 'SWAP' ? 'You Receive' : 'Select Asset'}
+                                    {outputIsLoading&&<span className="ml-3 loading loading-spinner loading-sm color-white"></span>}
+                                </div>
                                 <div className="flex items-center bg-[#323232] rounded-[0.5rem] py-[0.25rem] px-[1rem]">
                                     <input type="text" className="mr-[0.5rem]  bg-[#323232] text-white focus:outline-none" onChange={handleYAmountChange} value={inputYAmount} placeholder="Asset"/>
                                     <div onClick={() => openAssetModal('tokeny')} className="text-white bg-[#808080] py-[10px] rounded-[0.5rem] px-[8px] flex items-center cursor-pointer w-[10rem]">
