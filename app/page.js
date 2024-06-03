@@ -2,7 +2,7 @@ import Image from "next/image";
 
 export default function Home() {
     return (
-        <main className="flex">
+        <main className="flex justify-center">
             <div className="border rounded-r-[1rem] bg-[#f1fbc4] pl-[4.62rem] pb-[3.12rem] mt-[2.5rem]">
                 <div className="font-['twkemono-bold'] text-[3rem] text-[#030201] mt-[2rem]">
                     Asset Diversified Liquidity Swap

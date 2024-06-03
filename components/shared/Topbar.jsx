@@ -19,7 +19,7 @@ export default function Topbar() {
                     <Image src="/logo.svg" alt="github-icon" width={200} height={100} priority/>
                 </Link>
                 {pathname !== '/' ? <div className="flex items-center justify-center font-['twkemono-bold']">
-                        <Link key="console" href="/console" className={`${pathname === '/console' && 'bg-[#3556D5] text-white'} text-xl hover:text-white duration-150 text-[#444] mr-[1.5rem] px-[1rem] py-[0.25rem] rounded-[0.25rem] text-[1rem]`}>
+                        <Link key="console" href="/console" className={`${pathname === '/console' && 'bg-[#3556D5] text-white'} text-xl hover:text-white duration-150 text-[#444] mr-[1.5rem] px-[1rem] py-[0.25rem] rounded-[0.25rem] text-[1rem] shadow-[0px_0px_5px_5px_#3556D5]`}>
                             Console
                         </Link>
                         <Link key="mypool" href="/mypool" className={`${pathname === '/mypool' && 'bg-[#3556D5] text-white'} text-xl hover:text-white duration-150  text-[#444] px-[1rem] py-[0.25rem] rounded-[0.25rem] text-[1rem]`}>

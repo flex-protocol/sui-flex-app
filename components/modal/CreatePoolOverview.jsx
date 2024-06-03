@@ -2,11 +2,11 @@
 
 import Image from "next/image";
 
-export default function AddLiquidityTransactionOverview({handleClick, inputX,inputY,inputXToken,inputYToken,inputTokenXPrice,inputTokenYPrice,tokenXBalance,tokenYBalance,closeClick,numerator,denominator,impact}) {
+export default function CreatePoolOverview({handleClick, inputX,inputY,inputXToken,inputYToken,inputTokenXPrice,inputTokenYPrice,tokenXBalance,tokenYBalance,closeClick}) {
 
     return (
         <>
-            <dialog id="add_liquidity_transaction_overview_modal" className="modal">
+            <dialog id="create_pool_overview_modal" className="modal">
                 <div className="modal-box">
                     <div className="flex items-center">
                         <Image alt='' onClick={closeClick} className="cursor-pointer" src="/close.svg" width={20} height={20}></Image>
@@ -47,12 +47,12 @@ export default function AddLiquidityTransactionOverview({handleClick, inputX,inp
                     </div>
                     <div className="flex justify-between mt-[0.5rem] text-[0.55rem]">
                         <div>LP fee</div>
-                        <div>{(numerator/denominator)*100}%</div>
+                        <div>0.3%</div>
                     </div>
-                    <div className="flex justify-between mt-[0.5rem] text-[0.55rem]">
-                        <div>Share of pool</div>
-                        <div>~ {impact}%</div>
-                    </div>
+                    {/*<div className="flex justify-between mt-[0.5rem] text-[0.55rem]">*/}
+                    {/*    <div>Share of pool</div>*/}
+                    {/*    <div>1%</div>*/}
+                    {/*</div>*/}
                     {/*<div className="flex justify-between mt-[0.5rem] text-[0.55rem]">*/}
                     {/*    <div>Fee</div>*/}
                     {/*    <div>0.3%</div>*/}
@@ -73,7 +73,7 @@ export default function AddLiquidityTransactionOverview({handleClick, inputX,inp
                     {/*</div>*/}
 
                     <div className="flex justify-center mt-[1rem]">
-                        <button className="btn bg-[#0337FFCC] text-white w-[80%]" onClick={handleClick}>Add Liquidity</button>
+                        <button className="btn bg-[#0337FFCC] text-white w-[80%]" onClick={handleClick}>Create Pool</button>
                     </div>
                 </div>
                 <form method="dialog" className="modal-backdrop">
