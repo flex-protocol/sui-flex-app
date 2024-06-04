@@ -673,12 +673,12 @@ export default function Swap() {
     return (
         <>
             <div className="relative flex flex-col justify-center items-center gap-8 py-16 text-[#030201]">
-                <div className="font-[700] w-[60%] font-['twkemono-bold']">
+                <div className="font-[700] w-[60%] font-['twkemono-bold'] max-[800px]:w-[90%]">
                     <h1 className="lg:text-4xl text-2xl goldman-bold text-[3rem] text-left">Swap Anything</h1>
-                    <h1 className="lg:text-4xl text-2xl goldman-bold text-right">anytime anywhere</h1>
+                    <h1 className="lg:text-4xl text-2xl goldman-bold text-[3rem] text-right max-[800px]:mt-[1rem]">anytime anywhere</h1>
                 </div>
-                <div className="flex">
-                    <div>
+                <div className="flex max-[800px]:flex-col max-[800px]:items-center max-[800px]:w-[100%]">
+                    <div className="max-[800px]:mb-[1rem]">
                         <div>
                             <div className="dropdown dropdown-hover bg-[#fbf2c4] rounded-[1rem] shadow-[0px_0px_8px_0px_#00000020]">
                                 <div tabIndex={0} role="button" className="text-[1rem] font-[700] mx-[1.5rem] mt-[0.5rem] bg-[#fbf2c4] flex flex-col justify-center items-center w-[10rem]">
@@ -691,16 +691,15 @@ export default function Swap() {
                                     <li onClick={() => handleActionChange('CREATE')} className={`${selectAction === 'CREATE' && 'text-[#2837FE]'}`}><a>CREATE</a></li>
                                 </ul>
                             </div>
-
                         </div>
                         <div></div>
                     </div>
-                    <div className=" bg-[#fbf2c4] rounded-[1rem] mx-[1rem] shadow-[0px_0px_8px_0px_#00000020]">
-                        <div className="flex items-center">
-                            <div className="pl-[1rem] py-[0.5rem]">
+                    <div className=" bg-[#fbf2c4] rounded-[1rem] mx-[1rem] shadow-[0px_0px_8px_0px_#00000020] max-[800px]:w-[90%]">
+                        <div className="flex items-center max-[800px]:flex-col">
+                            <div className="min-[800px]:pl-[1rem] py-[0.5rem] max-[800px]:mx-[0.5rem]">
                                 <div className="mb-[0.25rem]  font-[400]">{selectAction === 'SWAP' ? 'You pay' : 'Select Asset'}</div>
                                 <div className="flex items-center bg-[#323232] rounded-[0.5rem] py-[0.25rem] px-[1rem]">
-                                    <input onChange={handleXAmountChange} value={inputXAmount} type="text" className="mr-[0.5rem] bg-[#323232] text-white focus:outline-none" placeholder="Asset"/>
+                                    <input onChange={handleXAmountChange} value={inputXAmount} type="text" className="mr-[0.5rem] bg-[#323232] text-white focus:outline-none max-[800px]:w-[35%]" placeholder="Asset"/>
                                     {/*<span className="text-white mr-[50px]">Asset</span>*/}
                                     <div onClick={() => openAssetModal('tokenx')} className="text-white bg-[#808080] py-[10px] rounded-[0.5rem] px-[8px] flex items-center cursor-pointer w-[10rem]">
                                         <span className="mr-[0.25rem]">{selectTokenX === '' ? 'Select Token' : selectTokenX.split("::")[2]}</span>
@@ -715,13 +714,13 @@ export default function Swap() {
                             <div className="mx-[2rem]">
                                 {selectAction === 'SWAP' ? <Image alt='' src="/toright.svg" width={100} height={50}></Image> : <Image src="/PlusPair.svg" width={100} height={50}></Image>}
                             </div>
-                            <div className="pl-[1rem] py-[0.5rem] mr-[1rem]">
+                            <div className="min-[800px]:pl-[1rem] py-[0.5rem] min-[800px]:mr-[1rem] max-[800px]:mx-[0.5rem]">
                                 <div className="mb-[0.25rem]  font-[400] flex">
                                     {selectAction === 'SWAP' ? 'You Receive' : 'Select Asset'}
                                     {outputIsLoading && <span className="ml-3 loading loading-spinner loading-sm color-white"></span>}
                                 </div>
                                 <div className="flex items-center bg-[#323232] rounded-[0.5rem] py-[0.25rem] px-[1rem]">
-                                    <input type="text" className="mr-[0.5rem]  bg-[#323232] text-white focus:outline-none" onChange={handleYAmountChange} value={inputYAmount} placeholder="Asset"/>
+                                    <input type="text" className="mr-[0.5rem] bg-[#323232] text-white focus:outline-none max-[800px]:w-[35%]" onChange={handleYAmountChange} value={inputYAmount} placeholder="Asset"/>
                                     <div onClick={() => openAssetModal('tokeny')} className="text-white bg-[#808080] py-[10px] rounded-[0.5rem] px-[8px] flex items-center cursor-pointer w-[10rem]">
                                         <span className="mr-[0.25rem]">{selectTokenY === '' ? 'Select Token' : selectTokenY.split("::")[2]}</span>
                                         <Image alt='' src="/down.svg" width={20} height={20}></Image>
@@ -744,7 +743,7 @@ export default function Swap() {
                             </div>
                         </div>}
                     </div>
-                    <button disabled={!submitStatus().status} className={`btn bg-[#3556D5] border-none text-white mt-[0.5rem] ${!submitStatus().status ? ' bg-[#939393]':'shadow-[0px_0px_12px_0px_#3556D5]'}`} onClick={() => openModal()}>Preview {submitStatus().status}</button>
+                    <button disabled={!submitStatus().status} className={`btn max-[800px]:w-[10rem] bg-[#3556D5] border-none text-white mt-[0.5rem] ${!submitStatus().status ? ' bg-[#939393]':'shadow-[0px_0px_12px_0px_#3556D5]'}`} onClick={() => openModal()}>Preview {submitStatus().status}</button>
                     <ChainResult title={selectAction === 'SWAP' ? "Swap submitted" : selectAction === 'ADDLIQUIDITY' ? "Add liquidity submitted" : "Create pool submitted"} inputX={inputXAmount} inputY={inputYAmount} inputXToken={selectTokenX === "" ? "" : selectTokenX.split("::")[2]} inputYToken={selectTokenY === "" ? "" : selectTokenY.split("::")[2]} resultHash={resultHash} currentChain={currentChain}/>
                     <TransactionOverview handleClick={doAction} inputX={inputXAmount} inputY={inputYAmount} inputXToken={selectTokenX === "" ? "" : selectTokenX.split("::")[2]} inputYToken={selectTokenY === "" ? "" : selectTokenY.split("::")[2]} slippage={slippage} impact={(inputYAmount * (10 ** coinInfo[currentChain][selectTokenY].decimals) / yreserve * 100).toFixed(2)} inputTokenXPrice={inputTokenXPrice} inputTokenYPrice={inputTokenYPrice}
                                          tokenXBalance={calculateBalance(selectTokenXBalance, selectTokenX)}
