@@ -9,16 +9,19 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@biconomy/account": "^4.4.5",
     "@mysten/dapp-kit": "^0.11.1",
     "@mysten/sui.js": "^0.49.1",
     "@pythnetwork/pyth-sui-js": "^2.0.0",
     "@suiet/wallet-kit": "^0.2.24",
+    "@unipasswallet/popup-sdk": "^1.1.11",
     "axios": "^1.6.8",
     "bn.js": "^5.1.2",
     "next": "14.2.3",
     "react": "^18",
     "react-dom": "^18",
-    "react-hot-toast": "^2.4.1"
+    "react-hot-toast": "^2.4.1",
+    "viem": "^2.13.6"
   },
   "devDependencies": {
     "daisyui": "^4.11.1",

@@ -49,6 +49,8 @@ export default function Swap() {
     const [outputIsLoading, setOutputIsLoading] = useState(false);
     const [denominator, setDenominator] = useState(false);
     const [numerator, setNumerator] = useState(false);
+    const [xTypeArg, setXTypeArg] = useState('');
+    const [yTypeArg, setYTypeArg] = useState('');
 
 
     useEffect(() => {
@@ -196,6 +198,9 @@ export default function Swap() {
                 tempTokenY = '0x' + item.y_TokenTypes[0]
             }
 
+            setXTypeArg(item.x_TokenTypes[0])
+            setYTypeArg(item.y_TokenTypes[0])
+
             if (tempTokenX === tokenX && tempTokenY === tokenY) {
                 tokenPairs = item.tokenPairs[0]
                 return {tokenPairs, swapType: 'swap_x'}
@@ -328,7 +333,7 @@ export default function Swap() {
 
     async function swap(tokenPairs, swapType, XAmount, YAmount) {
         try {
-            console.log('wallet.account', wallet.account)
+            // console.log('wallet.account', wallet.account)
             const txb = new TransactionBlock();
             txb.setGasBudget(10000000);
             const splitXCoin = doSplitXCoin(txb, XAmount, YAmount)
@@ -340,11 +345,11 @@ export default function Swap() {
                 txb.object(splitYCoin),
                 txb.pure.u64(YAmount),
             ]
-            console.log('param', param, COIN_TYPE)
+            // console.log('param', param, COIN_TYPE)
             txb.moveCall({
                 target: `${config[currentChain + "CORE_PACKAGE_ID"]}::token_pair_service::${swapType}`,
                 arguments: param,
-                typeArguments: [COIN_TYPE, `${config[currentChain + "CORE_PACKAGE_ID_NOT_OX"]}::example_coin::EXAMPLE_COIN`]
+                typeArguments: [xTypeArg, yTypeArg]
             });
             if (selectTokenY === '0000000000000000000000000000000000000000000000000000000000000002::sui::SUI') {
                 txb.transferObjects([splitYCoin], txb.pure.address(account.address))
@@ -352,20 +357,20 @@ export default function Swap() {
             const res = await signAndExecuteTransactionBlock({
                 transactionBlock: txb,
             });
-            console.log('chain result', res)
-            const client = new SuiClient({
-                url: currentChain === 'm2' ? config[currentChain + "Url"] : getFullnodeUrl(config[currentChain + "Url"]),
-            });
-            const digest = res.digest
-            const tx = await client.waitForTransactionBlock({
-                digest: digest,
-                options: {
-                    showEffects: true,
-                },
-            });
-            console.log('tx result', tx)
-            console.log('tx result', tx.effects.status.status)
-            console.log('tx result', tx.effects.status.error)
+            // console.log('chain result', res)
+            // const client = new SuiClient({
+            //     url: currentChain === 'm2' ? config[currentChain + "Url"] : getFullnodeUrl(config[currentChain + "Url"]),
+            // });
+            // const digest = res.digest
+            // const tx = await client.waitForTransactionBlock({
+            //     digest: digest,
+            //     options: {
+            //         showEffects: true,
+            //     },
+            // });
+            // console.log('tx result', tx)
+            // console.log('tx result', tx.effects.status.status)
+            // console.log('tx result', tx.effects.status.error)
             setResultHash(res.digest)
             document.getElementById('transaction_overview_modal').close()
             document.getElementById('my_modal_2').showModal()
@@ -452,7 +457,7 @@ export default function Swap() {
             txb.moveCall({
                 target: `${config[currentChain + "CORE_PACKAGE_ID"]}::token_pair_service::add_liquidity`,
                 arguments: param,
-                typeArguments: [COIN_TYPE, `${config[currentChain + "CORE_PACKAGE_ID_NOT_OX"]}::example_coin::EXAMPLE_COIN`]
+                typeArguments: [xTypeArg, yTypeArg]
             });
 
             const res = await signAndExecuteTransactionBlock({
@@ -484,40 +489,46 @@ export default function Swap() {
     }
 
     async function createPool(tokenPairs, XAmount, YAmount) {
+        if (slippage < 0.1) {
+            toast.custom(<TxToast title={'LP Fee to small'} digest={""}/>);
+            return
+        }
         try {
             const txb = new TransactionBlock();
             txb.setGasBudget(10000000);
             const splitXCoin = doSplitXCoin(txb, XAmount, YAmount)
             const splitYCoin = await doSplitYCoin(txb, XAmount, YAmount)
             let param = [
-                    txb.object(splitXCoin),
-                    txb.pure.u64(XAmount),
-                    txb.object(splitYCoin),
-                    txb.pure.u64(YAmount)
-                ]
+                txb.object(splitXCoin),
+                txb.pure.u64(XAmount),
+                txb.object(splitYCoin),
+                txb.pure.u64(YAmount),
+                txb.pure.u64(slippage * 10),
+                txb.pure.u64(1000),
+            ]
             console.log('param', param, COIN_TYPE)
             txb.moveCall({
                 target: `${config[currentChain + "CORE_PACKAGE_ID"]}::token_pair_service::initialize_liquidity`,
                 arguments: param,
-                typeArguments: [COIN_TYPE, `${config[currentChain + "CORE_PACKAGE_ID_NOT_OX"]}::example_coin::EXAMPLE_COIN`]
+                typeArguments: [xTypeArg, yTypeArg]
             });
 
             const res = await signAndExecuteTransactionBlock({
                 transactionBlock: txb,
             });
-            // const digest = res.digest
+            const digest = res.digest
             // console.log('chain result', res)
             // console.log('chain result', res.digest)
-            // const client = new SuiClient({
-            //     url: currentChain === 'm2' ? config[currentChain + "Url"] : getFullnodeUrl(config[currentChain + "Url"]),
-            // });
-            // const tx = await client.waitForTransactionBlock({
-            //     digest: digest,
-            //     options: {
-            //         showEffects: true,
-            //     },
-            // });
-            // console.log('tx result', tx)
+            const client = new SuiClient({
+                url: currentChain === 'm2' ? config[currentChain + "Url"] : getFullnodeUrl(config[currentChain + "Url"]),
+            });
+            const tx = await client.waitForTransactionBlock({
+                digest: digest,
+                options: {
+                    showEffects: true,
+                },
+            });
+            console.log('tx result', tx)
             setResultHash(res.digest)
             document.getElementById('create_pool_overview_modal').close()
             document.getElementById('my_modal_2').showModal()
@@ -577,6 +588,11 @@ export default function Swap() {
 
     async function handleActionChange(value) {
         setSelectAction(value);
+        if (value === 'SWAP') {
+            setSlippage(0.5)
+        } else if (value === 'CREATE') {
+            setSlippage(0.3)
+        }
     }
 
     function calculateBalance(tokenBalance, selectToken) {
@@ -614,7 +630,7 @@ export default function Swap() {
         }
     }
 
-    async function selectToken(tokenInfo,_selectTokenAsset) {
+    async function selectToken(tokenInfo, _selectTokenAsset) {
         setIsLoading(true)
         console.log('_selectTokenAsset', _selectTokenAsset, selectTokenAsset)
         if (_selectTokenAsset === 'tokenx') {
@@ -673,22 +689,22 @@ export default function Swap() {
     return (
         <>
             <div className="relative flex flex-col justify-center items-center gap-8 py-16 text-[#030201]">
-                <div className="font-[700] w-[60%] font-['twkemono-bold'] max-[800px]:w-[90%]">
-                    <h1 className="lg:text-4xl text-2xl goldman-bold text-[3rem] text-left">Swap Anything</h1>
-                    <h1 className="lg:text-4xl text-2xl goldman-bold text-[3rem] text-right max-[800px]:mt-[1rem]">anytime anywhere</h1>
+                <div className="font-[700] w-[75%] font-['twkemono-bold'] max-[800px]:w-[90%]">
+                    <h1 className="lg:text-5xl text-2xl goldman-bold text-[3rem] text-left">Swap Anything</h1>
+                    <h1 className="lg:text-5xl text-2xl goldman-bold text-[3rem] text-right max-[800px]:mt-[1rem]">Anytime Anywhere</h1>
                 </div>
-                <div className="flex max-[800px]:flex-col max-[800px]:items-center max-[800px]:w-[100%]">
+                <div className="flex max-[800px]:flex-col max-[800px]:items-center max-[800px]:w-[100%] min-[800px]:mt-[2.5rem]">
                     <div className="max-[800px]:mb-[1rem]">
                         <div>
-                            <div className="dropdown dropdown-hover bg-[#fbf2c4] rounded-[1rem] shadow-[0px_0px_8px_0px_#00000020]">
-                                <div tabIndex={0} role="button" className="text-[1rem] font-[700] mx-[1.5rem] mt-[0.5rem] bg-[#fbf2c4] flex flex-col justify-center items-center w-[10rem]">
+                            <div className="dropdown dropdown-hover rounded-box  bg-[#fbf2c4] shadow-[0px_0px_12px_0px_#00000020]">
+                                <div tabIndex={0} role="button" className="text-[1rem] font-[700] mx-[0.2rem] mt-[0.5rem] flex flex-col justify-center items-center w-[10rem]">
                                     <div className="mb-[1rem] mt-[0.5rem] font-['twkemono-bold']">{selectAction === 'ADDLIQUIDITY' ? 'ADD LIQUIDITY' : selectAction}</div>
                                     <Image alt='' className="mb-[1rem]" src="/downbold.svg" width={20} height={20}></Image>
                                 </div>
-                                <ul tabIndex={0} className="dropdown-content z-[1] menu p-2 shadow bg-base-100 rounded-box w-52 bg-[#fbf2c4]">
-                                    <li onClick={() => handleActionChange('SWAP')} className={`border-b-[1px] ${selectAction === 'SWAP' && 'text-[#2837FE]'}`}><a>SWAP</a></li>
-                                    <li onClick={() => handleActionChange('ADDLIQUIDITY')} className={`border-b-[1px] ${selectAction === 'ADDLIQUIDITY' && 'text-[#2837FE]'}`}><a>ADD LIQUIDITY</a></li>
-                                    <li onClick={() => handleActionChange('CREATE')} className={`${selectAction === 'CREATE' && 'text-[#2837FE]'}`}><a>CREATE</a></li>
+                                <ul tabIndex={0} className="dropdown-content z-[1] menu p-2 shadow bg-base-100 rounded-box w-[10.5rem] mt-[0.4rem] bg-[#fbf2c4] hover:bg-white">
+                                    <li onClick={() => handleActionChange('SWAP')} className={`py-[0.5rem] border-b-[1px] hover:bg-white active:bg-white focus:bg-white hover:bg-white ${selectAction === 'SWAP' && 'text-[#2837FE]'}`}><a className="hover:bg-white active:bg-white focus:bg-white">SWAP</a></li>
+                                    <li onClick={() => handleActionChange('ADDLIQUIDITY')} className={`py-[0.5rem] border-b-[1px] hover:bg-white active:bg-white focus:bg-white hover:bg-white ${selectAction === 'ADDLIQUIDITY' && 'text-[#2837FE]'}`}><a className="hover:bg-white active:bg-white focus:bg-white">ADD LIQUIDITY</a></li>
+                                    <li onClick={() => handleActionChange('CREATE')} className={`py-[0.5rem] hover:bg-white hover:bg-white active:bg-white focus:bg-white after ${selectAction === 'CREATE' && 'text-[#2837FE]'}`}><a className="hover:bg-white active:bg-white focus:bg-white">CREATE</a></li>
                                 </ul>
                             </div>
                         </div>
@@ -701,11 +717,11 @@ export default function Swap() {
                                 <div className="flex items-center bg-[#323232] rounded-[0.5rem] py-[0.25rem] px-[1rem]">
                                     <input onChange={handleXAmountChange} value={inputXAmount} type="text" className="mr-[0.5rem] bg-[#323232] text-white focus:outline-none max-[800px]:w-[35%]" placeholder="Asset"/>
                                     {/*<span className="text-white mr-[50px]">Asset</span>*/}
-                                    <div onClick={() => openAssetModal('tokenx')} className="text-white bg-[#808080] py-[10px] rounded-[0.5rem] px-[8px] flex items-center cursor-pointer w-[10rem]">
-                                        <span className="mr-[0.25rem]">{selectTokenX === '' ? 'Select Token' : selectTokenX.split("::")[2]}</span>
+                                    <div onClick={() => openAssetModal('tokenx')} className="text-white bg-[#808080] py-[10px] rounded-[0.5rem] px-[8px] flex items-center justify-around	 cursor-pointer w-[7rem]">
+                                        <span className="mr-[0.25rem]">{selectTokenX === '' ? 'Select' : (selectTokenX.split("::")[2]).length < 6 ? selectTokenX.split("::")[2] : (selectTokenX.split("::")[2]).substr(0, 6) + "..."}</span>
                                         <Image alt='' src="/down.svg" width={20} height={20}></Image>
                                     </div>
-                                    <button className="btn text-white bg-[#0337ffcc] border-none ml-[0.25rem]" onClick={() => inputMaxAmount('X')}>Max</button>
+                                    <button className="btn text-white bg-[#0337ffcc] border-none ml-[0.25rem] min-h-[2.8rem] h-[2.8rem]" onClick={() => inputMaxAmount('X')}>Max</button>
                                 </div>
                                 <div className="flex justify-between text-[0.55rem] text-[#808080] mt-[0.5rem]">
                                     <span>{'$ ' + inputTokenXPrice}</span><span>Balance:{calculateBalance(selectTokenXBalance, selectTokenX)}</span>
@@ -714,18 +730,18 @@ export default function Swap() {
                             <div className="mx-[2rem]">
                                 {selectAction === 'SWAP' ? <Image alt='' src="/toright.svg" width={100} height={50}></Image> : <Image src="/PlusPair.svg" width={100} height={50}></Image>}
                             </div>
-                            <div className="min-[800px]:pl-[1rem] py-[0.5rem] min-[800px]:mr-[1rem] max-[800px]:mx-[0.5rem]">
+                            <div className="py-[0.5rem] min-[800px]:mr-[1rem] max-[800px]:mx-[0.5rem]">
                                 <div className="mb-[0.25rem]  font-[400] flex">
                                     {selectAction === 'SWAP' ? 'You Receive' : 'Select Asset'}
                                     {outputIsLoading && <span className="ml-3 loading loading-spinner loading-sm color-white"></span>}
                                 </div>
                                 <div className="flex items-center bg-[#323232] rounded-[0.5rem] py-[0.25rem] px-[1rem]">
                                     <input type="text" className="mr-[0.5rem] bg-[#323232] text-white focus:outline-none max-[800px]:w-[35%]" onChange={handleYAmountChange} value={inputYAmount} placeholder="Asset"/>
-                                    <div onClick={() => openAssetModal('tokeny')} className="text-white bg-[#808080] py-[10px] rounded-[0.5rem] px-[8px] flex items-center cursor-pointer w-[10rem]">
-                                        <span className="mr-[0.25rem]">{selectTokenY === '' ? 'Select Token' : selectTokenY.split("::")[2]}</span>
+                                    <div onClick={() => openAssetModal('tokeny')} className="text-white bg-[#808080] py-[10px] rounded-[0.5rem] px-[8px] flex items-center cursor-pointer w-[7rem] justify-around	">
+                                        <span className="mr-[0.25rem]">{selectTokenY === '' ? 'Select' : selectTokenY.split("::")[2].length < 6 ? selectTokenY.split("::")[2] : selectTokenY.split("::")[2].substr(0, 6) + "..."}</span>
                                         <Image alt='' src="/down.svg" width={20} height={20}></Image>
                                     </div>
-                                    <button className="btn text-white bg-[#0337ffcc] border-none ml-[0.25rem]" onClick={() => inputMaxAmount('Y')}>Max</button>
+                                    <button className="btn text-white bg-[#0337ffcc] border-none ml-[0.25rem] min-h-[2.8rem] h-[2.8rem]" onClick={() => inputMaxAmount('Y')}>Max</button>
                                 </div>
                                 <div className="flex justify-between text-[0.55rem] text-[#808080] mt-[0.5rem]">
                                     <span>{'$ ' + inputTokenYPrice}</span><span>Balance:{calculateBalance(selectTokenYBalance, selectTokenY)}</span>
@@ -735,15 +751,25 @@ export default function Swap() {
 
                         {selectAction === 'SWAP' && <div className="flex flex-col items-end	mt-[0.25rem] px-[1rem]">
                             <div className="bg-[#323232] text-white rounded-[1rem] py-[0.25rem]">
-                                <input className="bg-[#323232] rounded-l-[1rem] pl-[1rem] w-[5rem]" onChange={handleSlippageChange} value={slippage} type="text"/>
-                                <span className="pr-[1rem]">% Slippage</span>
+                                <input className="bg-[#323232] rounded-l-[1rem] pl-[1rem] w-[5rem] focus:outline-none  text-[1rem]" onChange={handleSlippageChange} value={slippage} type="text"/>
+                                <span className="pr-[1rem] text-[#808080] text-[1rem]">% Slippage</span>
                             </div>
                             <div className="text-[#0337FFCC] text-[0.5rem] mr-[1rem] mt-[0.2rem] mb-[0.5rem]">
                                 0.5% Recommended
                             </div>
                         </div>}
+                        {selectAction === 'CREATE' && <div className="flex flex-col items-end	mt-[0.25rem] px-[1rem]">
+                            <div className="bg-[#323232] text-white rounded-[1rem] py-[0.25rem]">
+                                <input className="bg-[#323232] rounded-l-[1rem] pl-[1rem] w-[5rem] focus:outline-none text-[1rem]" onChange={handleSlippageChange} value={slippage} type="text"/>
+                                <span className="pr-[1rem] text-[#808080] text-[1rem]">% LP Fee</span>
+                            </div>
+                            <div className="text-[#0337FFCC] text-[0.5rem] mr-[1rem] mt-[0.2rem] mb-[0.5rem]">
+                                0.3% Recommended
+                            </div>
+                        </div>}
+
                     </div>
-                    <button disabled={!submitStatus().status} className={`btn max-[800px]:w-[10rem] bg-[#3556D5] border-none text-white mt-[0.5rem] ${!submitStatus().status ? ' bg-[#939393]':'shadow-[0px_0px_12px_0px_#3556D5]'}`} onClick={() => openModal()}>Preview {submitStatus().status}</button>
+                    <button disabled={!submitStatus().status} className={`btn max-[800px]:w-[10rem] w-[7.5rem] h-[4rem] bg-[#3556D5] border-none text-white mt-[0.5rem] ${!submitStatus().status ? ' bg-[#939393]' : 'shadow-[0px_0px_12px_0px_#3556D5]'}`} onClick={() => openModal()}>Confirm {submitStatus().status}</button>
                     <ChainResult title={selectAction === 'SWAP' ? "Swap submitted" : selectAction === 'ADDLIQUIDITY' ? "Add liquidity submitted" : "Create pool submitted"} inputX={inputXAmount} inputY={inputYAmount} inputXToken={selectTokenX === "" ? "" : selectTokenX.split("::")[2]} inputYToken={selectTokenY === "" ? "" : selectTokenY.split("::")[2]} resultHash={resultHash} currentChain={currentChain}/>
                     <TransactionOverview handleClick={doAction} inputX={inputXAmount} inputY={inputYAmount} inputXToken={selectTokenX === "" ? "" : selectTokenX.split("::")[2]} inputYToken={selectTokenY === "" ? "" : selectTokenY.split("::")[2]} slippage={slippage} impact={(inputYAmount * (10 ** coinInfo[currentChain][selectTokenY].decimals) / yreserve * 100).toFixed(2)} inputTokenXPrice={inputTokenXPrice} inputTokenYPrice={inputTokenYPrice}
                                          tokenXBalance={calculateBalance(selectTokenXBalance, selectTokenX)}
@@ -751,7 +777,7 @@ export default function Swap() {
                     <AddLiquidityTransactionOverview handleClick={doAction} inputX={inputXAmount} inputY={inputYAmount} inputXToken={selectTokenX === "" ? "" : selectTokenX.split("::")[2]} inputYToken={selectTokenY === "" ? "" : selectTokenY.split("::")[2]} swapRate={swapRate} inputTokenXPrice={inputTokenXPrice} inputTokenYPrice={inputTokenYPrice} tokenXBalance={calculateBalance(selectTokenXBalance, selectTokenX)} tokenYBalance={calculateBalance(selectTokenYBalance, selectTokenY)}
                                                      closeClick={closeLiquidityModal} numerator={numerator} denominator={denominator} impact={(inputYAmount * (10 ** coinInfo[currentChain][selectTokenY].decimals) / yreserve * 100).toFixed(2)}/>
                     <CreatePoolOverview handleClick={doAction} inputX={inputXAmount} inputY={inputYAmount} inputXToken={selectTokenX === "" ? "" : selectTokenX.split("::")[2]} inputYToken={selectTokenY === "" ? "" : selectTokenY.split("::")[2]} swapRate={swapRate} inputTokenXPrice={inputTokenXPrice} inputTokenYPrice={inputTokenYPrice} tokenXBalance={calculateBalance(selectTokenXBalance, selectTokenX)} tokenYBalance={calculateBalance(selectTokenYBalance, selectTokenY)}
-                                                     closeClick={closeLiquidityModal}/>
+                                        closeClick={closeLiquidityModal}/>
                     <SelectAsset handleClick={selectToken} currentChain={currentChain} isLoading={isLoading} closeClick={closeAssetModal} selectTokenAsset={selectTokenAsset}/>
                 </div>
             </div>

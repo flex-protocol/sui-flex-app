@@ -38,7 +38,7 @@
       "id": "0x587c29de216efd4219573e08a1f6964d4fa7cb714518c2c8a0f29abfa264327d",
       "image": "/icon/sui.svg"
     },
-    "0x7d6ed7690d4501cc83f1bdab01e45738022890da4030eee655cdbcb985a6f072::example_coin::EXAMPLE_COIN": {
+    "0x1fbb91bd77221cf17450a4378f2d93100cf65725e0099e4da71f62070ce4b729::example_coin::EXAMPLE_COIN": {
       "decimals": 2,
       "name": "EXAMPLE",
       "symbol": "EXAMPLE",

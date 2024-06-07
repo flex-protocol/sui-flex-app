@@ -45,7 +45,7 @@ export default function SelectAsset({handleClick, currentChain, isLoading, close
                         {isLoading && <span className="ml-3 loading loading-spinner loading-sm"></span>}
                     </div>
                     <div className='my-[0.5rem] py-[0.25rem] px-[0.25rem] rounded-[1rem]'>
-                        <input className='py-[0.5rem] px-[1rem] w-[90%] rounded-[1rem]' type="text" placeholder="Search Name or Address" onChange={searchAsset} value={searchValue}/></div>
+                        <input className='py-[0.5rem] px-[1rem] w-[90%] rounded-[1rem] border border-[#808080] focus:outline-none' type="text" placeholder="Search Name or Address" onChange={searchAsset} value={searchValue}/></div>
                     {assetList}
                 </div>
                 <form method="dialog" className="modal-backdrop">
