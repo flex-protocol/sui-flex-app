@@ -51,6 +51,7 @@ export default function Swap() {
     const [numerator, setNumerator] = useState(false);
     const [xTypeArg, setXTypeArg] = useState('');
     const [yTypeArg, setYTypeArg] = useState('');
+    const [showDropDownContent, setShowDropDownContent] = useState(false);
 
 
     useEffect(() => {
@@ -593,6 +594,7 @@ export default function Swap() {
         } else if (value === 'CREATE') {
             setSlippage(0.3)
         }
+        setShowDropDownContent(!showDropDownContent)
     }
 
     function calculateBalance(tokenBalance, selectToken) {
@@ -678,6 +680,10 @@ export default function Swap() {
         }
     }
 
+    function changeDropDownStatus() {
+        setShowDropDownContent(!showDropDownContent)
+    }
+
     useEffect(() => {
         calculateInputPrice(inputXAmount, selectTokenX, 'X')
     }, [selectTokenX, inputXAmount]);
@@ -696,12 +702,12 @@ export default function Swap() {
                 <div className="flex max-[800px]:flex-col max-[800px]:items-center max-[800px]:w-[100%] min-[800px]:mt-[2.5rem]">
                     <div className="max-[800px]:mb-[1rem]">
                         <div>
-                            <div className="dropdown dropdown-hover rounded-box  bg-[#fbf2c4] shadow-[0px_0px_12px_0px_#00000020]">
+                            <div className="dropdown rounded-box bg-[#fbf2c4] shadow-[0px_0px_12px_0px_#00000020]" onClick={() => changeDropDownStatus()}>
                                 <div tabIndex={0} role="button" className="text-[1rem] font-[700] mx-[0.2rem] mt-[0.5rem] flex flex-col justify-center items-center w-[10rem]">
                                     <div className="mb-[1rem] mt-[0.5rem] font-['twkemono-bold']">{selectAction === 'ADDLIQUIDITY' ? 'ADD LIQUIDITY' : selectAction}</div>
                                     <Image alt='' className="mb-[1rem]" src="/downbold.svg" width={20} height={20}></Image>
                                 </div>
-                                <ul tabIndex={0} className="dropdown-content z-[1] menu p-2 shadow bg-base-100 rounded-box w-[10.5rem] mt-[0.4rem] bg-[#fbf2c4] hover:bg-white">
+                                <ul tabIndex={0} className={`dropdown-content ${showDropDownContent === true ? '!visible':'!invisible'} z-[1] menu p-2 shadow bg-base-100 rounded-box w-[10.5rem] mt-[0.5rem] bg-[#fbf2c4] hover:bg-white`}>
                                     <li onClick={() => handleActionChange('SWAP')} className={`py-[0.5rem] border-b-[1px] hover:bg-white active:bg-white focus:bg-white hover:bg-white ${selectAction === 'SWAP' && 'text-[#2837FE]'}`}><a className="hover:bg-white active:bg-white focus:bg-white">SWAP</a></li>
                                     <li onClick={() => handleActionChange('ADDLIQUIDITY')} className={`py-[0.5rem] border-b-[1px] hover:bg-white active:bg-white focus:bg-white hover:bg-white ${selectAction === 'ADDLIQUIDITY' && 'text-[#2837FE]'}`}><a className="hover:bg-white active:bg-white focus:bg-white">ADD LIQUIDITY</a></li>
                                     <li onClick={() => handleActionChange('CREATE')} className={`py-[0.5rem] hover:bg-white hover:bg-white active:bg-white focus:bg-white after ${selectAction === 'CREATE' && 'text-[#2837FE]'}`}><a className="hover:bg-white active:bg-white focus:bg-white">CREATE</a></li>
@@ -723,7 +729,7 @@ export default function Swap() {
                                     </div>
                                     <button className="btn text-white bg-[#0337ffcc] border-none ml-[0.25rem] min-h-[2.8rem] h-[2.8rem]" onClick={() => inputMaxAmount('X')}>Max</button>
                                 </div>
-                                <div className="flex justify-between text-[0.55rem] text-[#808080] mt-[0.5rem]">
+                                <div className="flex justify-between text-[0.55rem] text-[#808080] mt-[0.5rem] mx-[1rem]">
                                     <span>{'$ ' + inputTokenXPrice}</span><span>Balance:{calculateBalance(selectTokenXBalance, selectTokenX)}</span>
                                 </div>
                             </div>
@@ -743,25 +749,25 @@ export default function Swap() {
                                     </div>
                                     <button className="btn text-white bg-[#0337ffcc] border-none ml-[0.25rem] min-h-[2.8rem] h-[2.8rem]" onClick={() => inputMaxAmount('Y')}>Max</button>
                                 </div>
-                                <div className="flex justify-between text-[0.55rem] text-[#808080] mt-[0.5rem]">
+                                <div className="flex justify-between text-[0.55rem] text-[#808080] mt-[0.5rem]  mx-[1rem]">
                                     <span>{'$ ' + inputTokenYPrice}</span><span>Balance:{calculateBalance(selectTokenYBalance, selectTokenY)}</span>
                                 </div>
                             </div>
                         </div>
 
-                        {selectAction === 'SWAP' && <div className="flex flex-col items-end	mt-[0.25rem] px-[1rem]">
-                            <div className="bg-[#323232] text-white rounded-[1rem] py-[0.25rem]">
-                                <input className="bg-[#323232] rounded-l-[1rem] pl-[1rem] w-[5rem] focus:outline-none  text-[1rem]" onChange={handleSlippageChange} value={slippage} type="text"/>
-                                <span className="pr-[1rem] text-[#808080] text-[1rem]">% Slippage</span>
+                        {selectAction === 'SWAP' && <div className="flex flex-col items-end	mt-[0.25rem] px-[1rem]  mx-[1rem]">
+                            <div className="bg-[#323232] text-white rounded-[0.75rem] overflow-hidden flex items-center py-[0.35rem]">
+                                <input className="bg-[#323232] pl-[1rem] w-[5rem] focus:outline-none  text-[0.5rem]" onChange={handleSlippageChange} value={slippage} type="text"/>
+                                <span className="pr-[1rem] text-[#808080] text-[0.5rem]">% Slippage</span>
                             </div>
                             <div className="text-[#0337FFCC] text-[0.5rem] mr-[1rem] mt-[0.2rem] mb-[0.5rem]">
                                 0.5% Recommended
                             </div>
                         </div>}
                         {selectAction === 'CREATE' && <div className="flex flex-col items-end	mt-[0.25rem] px-[1rem]">
-                            <div className="bg-[#323232] text-white rounded-[1rem] py-[0.25rem]">
-                                <input className="bg-[#323232] rounded-l-[1rem] pl-[1rem] w-[5rem] focus:outline-none text-[1rem]" onChange={handleSlippageChange} value={slippage} type="text"/>
-                                <span className="pr-[1rem] text-[#808080] text-[1rem]">% LP Fee</span>
+                            <div className="bg-[#323232] text-white rounded-[0.75rem] py-[0.25rem] overflow-hidden">
+                                <input className="bg-[#323232] pl-[1rem] w-[5rem] focus:outline-none text-[1rem]" onChange={handleSlippageChange} value={slippage} type="text"/>
+                                <span className="pr-[1rem] text-[#808080] text-[0.5rem]">% LP Fee</span>
                             </div>
                             <div className="text-[#0337FFCC] text-[0.5rem] mr-[1rem] mt-[0.2rem] mb-[0.5rem]">
                                 0.3% Recommended

@@ -1,7 +1,7 @@
 "use client";
 
 import {useEffect, useState} from "react";
-import {Chain, SuiDevnetChain, SuiMainnetChain, SuiTestnetChain, WalletProvider} from "@suiet/wallet-kit";
+import {Chain, SuiDevnetChain, SuiMainnetChain, SuiTestnetChain, WalletProvider,SuietWallet,SuiWallet} from "@suiet/wallet-kit";
 
 export default function SuietKit({children}) {
     const [ready, setReady] = useState(false);
@@ -27,5 +27,9 @@ export default function SuietKit({children}) {
         customChain,
     ];
 
-    return <>{ready && <WalletProvider chains={SupportedChains}>{children}</WalletProvider>}</>;
+    return <>{ready && <WalletProvider chains={SupportedChains} defaultWallets={[
+        // order defined by you
+        SuietWallet,
+        SuiWallet
+    ]}>{children}</WalletProvider>}</>;
 }
