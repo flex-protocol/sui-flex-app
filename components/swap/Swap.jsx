@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import {useAccountBalance, useSuiProvider, useWallet} from "@suiet/wallet-kit";
-import {useEffect, useState} from "react";
+import {useEffect, useState, useRef, useLayoutEffect} from "react";
 import {getFullnodeUrl, SuiClient} from '@mysten/sui.js/client';
 import {getAllExchanges} from "@/actions/ftassets.action";
 import {calculateSwapAmountOut} from "../../actions/ftassets.action";
@@ -52,6 +52,8 @@ export default function Swap() {
     const [xTypeArg, setXTypeArg] = useState('');
     const [yTypeArg, setYTypeArg] = useState('');
     const [showDropDownContent, setShowDropDownContent] = useState(false);
+    const ref = useRef(null);
+    const [width, setWidth] = useState(0);
 
 
     useEffect(() => {
@@ -549,6 +551,13 @@ export default function Swap() {
         document.getElementById('add_liquidity_transaction_overview_modal').close()
     }
 
+    function closeChainResultModal() {
+        if (document.getElementById('my_modal_2') === null) {
+            return
+        }
+        document.getElementById('my_modal_2').close()
+    }
+
     function closeCreatePoolModal() {
         if (document.getElementById('create_pool_overview_modal') === null) {
             return
@@ -688,6 +697,11 @@ export default function Swap() {
         calculateInputPrice(inputXAmount, selectTokenX, 'X')
     }, [selectTokenX, inputXAmount]);
 
+    useLayoutEffect(() => {
+        // calculateInputPrice(inputXAmount, selectTokenX, 'X')
+        console.log('width', ref.current.offsetWidth)
+    });
+
     useEffect(() => {
         calculateInputPrice(inputYAmount, selectTokenY, 'Y')
     }, [selectTokenY, inputYAmount]);
@@ -695,11 +709,11 @@ export default function Swap() {
     return (
         <>
             <div className="relative flex flex-col justify-center items-center gap-8 py-16 text-[#030201]">
-                <div className="font-[700] w-[75%] font-['twkemono-bold'] max-[800px]:w-[90%]">
+                <div className={`font-[700] w-[75%] font-['twkemono-bold'] max-[800px]:w-[90%]`}>
                     <h1 className="lg:text-5xl text-2xl goldman-bold text-[3rem] text-left">Swap Anything</h1>
                     <h1 className="lg:text-5xl text-2xl goldman-bold text-[3rem] text-right max-[800px]:mt-[1rem]">Anytime Anywhere</h1>
                 </div>
-                <div className="flex max-[800px]:flex-col max-[800px]:items-center max-[800px]:w-[100%] min-[800px]:mt-[2.5rem]">
+                <div ref={ref} className="flex max-[800px]:flex-col max-[800px]:items-center max-[800px]:w-[100%] min-[800px]:mt-[2.5rem] min-[800px]:justify-center">
                     <div className="max-[800px]:mb-[1rem]">
                         <div>
                             <div className="dropdown rounded-box bg-[#fbf2c4] shadow-[0px_0px_12px_0px_#00000020]" onClick={() => changeDropDownStatus()}>
@@ -716,12 +730,12 @@ export default function Swap() {
                         </div>
                         <div></div>
                     </div>
-                    <div className=" bg-[#fbf2c4] rounded-[1rem] mx-[1rem] shadow-[0px_0px_8px_0px_#00000020] max-[800px]:w-[90%]">
+                    <div className=" bg-[#fbf2c4] rounded-[1rem] mx-[1rem] shadow-[0px_0px_8px_0px_#00000020] max-[800px]:w-[90%] w-[65%]">
                         <div className="flex items-center max-[800px]:flex-col">
                             <div className="min-[800px]:pl-[1rem] py-[0.5rem] max-[800px]:mx-[0.5rem]">
                                 <div className="mb-[0.25rem]  font-[400]">{selectAction === 'SWAP' ? 'You pay' : 'Select Asset'}</div>
                                 <div className="flex items-center bg-[#323232] rounded-[0.5rem] py-[0.25rem] px-[1rem]">
-                                    <input onChange={handleXAmountChange} value={inputXAmount} type="text" className="mr-[0.5rem] bg-[#323232] text-white focus:outline-none max-[800px]:w-[35%]" placeholder="Asset"/>
+                                    <input onChange={handleXAmountChange} value={inputXAmount} type="text" className="mr-[0.5rem] bg-[#323232] text-white focus:outline-none max-[800px]:w-[35%] w-[40%]" placeholder="Asset"/>
                                     {/*<span className="text-white mr-[50px]">Asset</span>*/}
                                     <div onClick={() => openAssetModal('tokenx')} className="text-white bg-[#808080] py-[10px] rounded-[0.5rem] px-[8px] flex items-center justify-around	 cursor-pointer w-[7rem]">
                                         <span className="mr-[0.25rem]">{selectTokenX === '' ? 'Select' : (selectTokenX.split("::")[2]).length < 6 ? selectTokenX.split("::")[2] : (selectTokenX.split("::")[2]).substr(0, 6) + "..."}</span>
@@ -734,7 +748,7 @@ export default function Swap() {
                                 </div>
                             </div>
                             <div className="mx-[2rem]">
-                                {selectAction === 'SWAP' ? <Image alt='' src="/toright.svg" width={100} height={50}></Image> : <Image src="/PlusPair.svg" width={100} height={50}></Image>}
+                                {selectAction === 'SWAP' ? <Image alt='' src="/toright.svg" width={140} height={50}></Image> : <Image src="/PlusPair.svg" width={100} height={50}></Image>}
                             </div>
                             <div className="py-[0.5rem] min-[800px]:mr-[1rem] max-[800px]:mx-[0.5rem]">
                                 <div className="mb-[0.25rem]  font-[400] flex">
@@ -742,7 +756,7 @@ export default function Swap() {
                                     {outputIsLoading && <span className="ml-3 loading loading-spinner loading-sm color-white"></span>}
                                 </div>
                                 <div className="flex items-center bg-[#323232] rounded-[0.5rem] py-[0.25rem] px-[1rem]">
-                                    <input type="text" className="mr-[0.5rem] bg-[#323232] text-white focus:outline-none max-[800px]:w-[35%]" onChange={handleYAmountChange} value={inputYAmount} placeholder="Asset"/>
+                                    <input type="text" className="mr-[0.5rem] bg-[#323232] text-white focus:outline-none max-[800px]:w-[35%] w-[40%]" onChange={handleYAmountChange} value={inputYAmount} placeholder="Asset"/>
                                     <div onClick={() => openAssetModal('tokeny')} className="text-white bg-[#808080] py-[10px] rounded-[0.5rem] px-[8px] flex items-center cursor-pointer w-[7rem] justify-around	">
                                         <span className="mr-[0.25rem]">{selectTokenY === '' ? 'Select' : selectTokenY.split("::")[2].length < 6 ? selectTokenY.split("::")[2] : selectTokenY.split("::")[2].substr(0, 6) + "..."}</span>
                                         <Image alt='' src="/down.svg" width={20} height={20}></Image>
@@ -756,34 +770,34 @@ export default function Swap() {
                         </div>
 
                         {selectAction === 'SWAP' && <div className="flex flex-col items-end	mt-[0.25rem] px-[1rem]  mx-[1rem]">
-                            <div className="bg-[#323232] text-white rounded-[0.75rem] overflow-hidden flex items-center py-[0.35rem]">
-                                <input className="bg-[#323232] pl-[1rem] w-[5rem] focus:outline-none  text-[0.5rem]" onChange={handleSlippageChange} value={slippage} type="text"/>
-                                <span className="pr-[1rem] text-[#808080] text-[0.5rem]">% Slippage</span>
+                            <div className="bg-[#323232] text-white rounded-[0.6rem] overflow-hidden flex items-center py-[0.35rem]">
+                                <input className="bg-[#323232] pl-[1rem] w-[2rem] focus:outline-none text-[0.5rem]" onChange={handleSlippageChange} value={slippage} type="text"/>
+                                <span className="text-[#808080] text-[0.5rem] pr-[1rem]">% Slippage</span>
                             </div>
-                            <div className="text-[#0337FFCC] text-[0.5rem] mr-[1rem] mt-[0.2rem] mb-[0.5rem]">
+                            <div className="text-[#0337FFCC] text-[0.5rem] mr-[0.25rem] mt-[0.2rem] mb-[0.5rem] text-right ">
                                 0.5% Recommended
                             </div>
                         </div>}
-                        {selectAction === 'CREATE' && <div className="flex flex-col items-end	mt-[0.25rem] px-[1rem]">
-                            <div className="bg-[#323232] text-white rounded-[0.75rem] py-[0.25rem] overflow-hidden">
-                                <input className="bg-[#323232] pl-[1rem] w-[5rem] focus:outline-none text-[1rem]" onChange={handleSlippageChange} value={slippage} type="text"/>
+                        {selectAction === 'CREATE' && <div className="flex flex-col items-end	mt-[0.25rem] px-[1rem] mx-[1rem]">
+                            <div className="bg-[#323232] text-white rounded-[0.6rem] py-[0.25rem] overflow-hidden flex items-center py-[0.35rem]">
+                                <input className="bg-[#323232] pl-[1rem] w-[3rem] focus:outline-none text-[0.5rem]" onChange={handleSlippageChange} value={slippage} type="text"/>
                                 <span className="pr-[1rem] text-[#808080] text-[0.5rem]">% LP Fee</span>
                             </div>
-                            <div className="text-[#0337FFCC] text-[0.5rem] mr-[1rem] mt-[0.2rem] mb-[0.5rem]">
+                            <div className="text-[#0337FFCC] text-[0.5rem] mr-[0.5rem] mt-[0.2rem] mb-[0.5rem] text-right">
                                 0.3% Recommended
                             </div>
                         </div>}
 
                     </div>
                     <button disabled={!submitStatus().status} className={`btn max-[800px]:w-[10rem] w-[7.5rem] h-[4rem] bg-[#3556D5] border-none text-white mt-[0.5rem] ${!submitStatus().status ? ' bg-[#939393]' : 'shadow-[0px_0px_12px_0px_#3556D5]'}`} onClick={() => openModal()}>Confirm {submitStatus().status}</button>
-                    <ChainResult title={selectAction === 'SWAP' ? "Swap submitted" : selectAction === 'ADDLIQUIDITY' ? "Add liquidity submitted" : "Create pool submitted"} inputX={inputXAmount} inputY={inputYAmount} inputXToken={selectTokenX === "" ? "" : selectTokenX.split("::")[2]} inputYToken={selectTokenY === "" ? "" : selectTokenY.split("::")[2]} resultHash={resultHash} currentChain={currentChain}/>
+                    <ChainResult title={selectAction === 'SWAP' ? "Swap submitted" : selectAction === 'ADDLIQUIDITY' ? "Add liquidity submitted" : "Create pool submitted"} inputX={inputXAmount} inputY={inputYAmount} inputXToken={selectTokenX === "" ? "" : selectTokenX.split("::")[2]} inputYToken={selectTokenY === "" ? "" : selectTokenY.split("::")[2]} resultHash={resultHash} currentChain={currentChain} closeClick={closeChainResultModal}/>
                     <TransactionOverview handleClick={doAction} inputX={inputXAmount} inputY={inputYAmount} inputXToken={selectTokenX === "" ? "" : selectTokenX.split("::")[2]} inputYToken={selectTokenY === "" ? "" : selectTokenY.split("::")[2]} slippage={slippage} impact={(inputYAmount * (10 ** coinInfo[currentChain][selectTokenY].decimals) / yreserve * 100).toFixed(2)} inputTokenXPrice={inputTokenXPrice} inputTokenYPrice={inputTokenYPrice}
                                          tokenXBalance={calculateBalance(selectTokenXBalance, selectTokenX)}
                                          tokenYBalance={calculateBalance(selectTokenYBalance, selectTokenY)} closeClick={closeSwapModal}/>
                     <AddLiquidityTransactionOverview handleClick={doAction} inputX={inputXAmount} inputY={inputYAmount} inputXToken={selectTokenX === "" ? "" : selectTokenX.split("::")[2]} inputYToken={selectTokenY === "" ? "" : selectTokenY.split("::")[2]} swapRate={swapRate} inputTokenXPrice={inputTokenXPrice} inputTokenYPrice={inputTokenYPrice} tokenXBalance={calculateBalance(selectTokenXBalance, selectTokenX)} tokenYBalance={calculateBalance(selectTokenYBalance, selectTokenY)}
                                                      closeClick={closeLiquidityModal} numerator={numerator} denominator={denominator} impact={(inputYAmount * (10 ** coinInfo[currentChain][selectTokenY].decimals) / yreserve * 100).toFixed(2)}/>
                     <CreatePoolOverview handleClick={doAction} inputX={inputXAmount} inputY={inputYAmount} inputXToken={selectTokenX === "" ? "" : selectTokenX.split("::")[2]} inputYToken={selectTokenY === "" ? "" : selectTokenY.split("::")[2]} swapRate={swapRate} inputTokenXPrice={inputTokenXPrice} inputTokenYPrice={inputTokenYPrice} tokenXBalance={calculateBalance(selectTokenXBalance, selectTokenX)} tokenYBalance={calculateBalance(selectTokenYBalance, selectTokenY)}
-                                        closeClick={closeLiquidityModal}/>
+                                        closeClick={closeCreatePoolModal}/>
                     <SelectAsset handleClick={selectToken} currentChain={currentChain} isLoading={isLoading} closeClick={closeAssetModal} selectTokenAsset={selectTokenAsset}/>
                 </div>
             </div>
