@@ -17,6 +17,7 @@
     "@unipasswallet/popup-sdk": "^1.1.11",
     "axios": "^1.6.8",
     "bn.js": "^5.1.2",
+    "flex-sdk-dev": "^0.0.0",
     "next": "14.2.3",
     "react": "^18",
     "react-dom": "^18",

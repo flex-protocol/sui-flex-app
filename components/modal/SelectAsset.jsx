@@ -9,7 +9,7 @@ export default function SelectAsset({handleClick, currentChain, isLoading, close
 
     const [searchValue, setSearchValue] = useState('');
 
-    let keys = Object.keys(coinInfo[currentChain]);
+    let keys = Object.keys(coinInfo[currentChain] ?? {});
 
 
     const assetList = keys.map((key) => (
