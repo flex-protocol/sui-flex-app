@@ -5,7 +5,7 @@ import Topbar from "@/components/shared/Topbar";
 import Tabbar from "@/components/shared/Tabbar";
 // import Tabbar from "@/components/shared/Tabbar";
 import "@suiet/wallet-kit/style.css";
-
+import AptosKit from "@/components/wallet/AptosKit";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata = {
@@ -17,18 +17,15 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <body className={inter.className}>
-
-      <SuietKit>
+        <AptosKit>
           <main className="flex flex-col min-h-screen text-white bg-main bg-[#FAD457] font-['TwkeRegular']">
+            <Topbar />
 
-              <Topbar />
+            {children}
 
-              {children}
-
-              <Tabbar/>
-
+            <Tabbar />
           </main>
-      </SuietKit>
+        </AptosKit>
       </body>
     </html>
   );

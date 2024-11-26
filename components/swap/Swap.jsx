@@ -1,11 +1,6 @@
 "use client";
 
 import Image from "next/image";
-import {
-  useAccountBalance,
-  useSuiProvider,
-  useWallet,
-} from "@suiet/wallet-kit";
 import { useEffect, useState, useRef, useLayoutEffect } from "react";
 import { getFullnodeUrl, SuiClient } from "@mysten/sui.js/client";
 import { getAllExchanges } from "@/actions/ftassets.action";
@@ -23,11 +18,24 @@ import coinInfo from "@/data/coin";
 import config from "@/data/config";
 import { SuiPriceServiceConnection } from "@pythnetwork/pyth-sui-js";
 import CreatePoolOverview from "../modal/CreatePoolOverview";
+import { useWallet } from "@aptos-labs/wallet-adapter-react";
 
 export default function Swap() {
-  const wallet = useWallet();
-  const { account, signAndExecuteTransactionBlock } = useWallet();
-  const { error, loading, balance } = useAccountBalance();
+  const {
+    connect,
+    account,
+    network,
+    connected,
+    disconnect,
+    wallet,
+    wallets,
+    signAndSubmitTransaction,
+    signAndSubmitBCSTransaction,
+    signTransaction,
+    signMessage,
+    signMessageAndVerify,
+  } = useWallet();
+
   const [inputXAmount, setInputXAmount] = useState(0);
   const [inputYAmount, setInputYAmount] = useState(0);
   const [selectTokenX, setSelectTokenX] = useState("");
@@ -55,38 +63,6 @@ export default function Swap() {
   const [showDropDownContent, setShowDropDownContent] = useState(false);
   const ref = useRef(null);
   const [width, setWidth] = useState(0);
-
-  useEffect(() => {
-    // console.log('account.chains', wallet,account,wallet.address)
-    initData();
-  }, []);
-  useEffect(() => {
-    if (wallet.account !== undefined) {
-      console.log("wallet", wallet);
-      if (wallet.account.chains[0] === "sui:unknown") {
-        setCurrentChain("m2");
-        initData("m2");
-      } else {
-        setCurrentChain(wallet.account.chains[0]);
-        initData(wallet.account.chains[0]);
-      }
-    }
-  }, [wallet]);
-
-  async function initData(_currentChain) {
-    setAllExchanges((await getAllExchanges(_currentChain)).data);
-
-    const connection = new SuiPriceServiceConnection(
-      "https://hermes.pyth.network"
-    );
-    const priceIds = [
-      "0x23d7315113f5b1d3ba7a83604c44b94d79f4fd69af77f804fc7f920a6dc65744",
-    ];
-    const priceFeeds = await connection.getLatestPriceFeeds(priceIds);
-    setSuiPrice(
-      (priceFeeds[0].getPriceNoOlderThan(60).price / 10 ** 8).toFixed(2)
-    );
-  }
 
   const handleXAmountChange = async (e) => {
     setInputXAmount(e.target.value);
