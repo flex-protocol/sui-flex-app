@@ -64,6 +64,36 @@ export default function Swap() {
   const ref = useRef(null);
   const [width, setWidth] = useState(0);
 
+  // useEffect(() => {
+  //   // console.log('account.chains', wallet,account,wallet.address)
+  //   initData();
+  // }, []);
+  // useEffect(() => {
+  //   if (wallet.account !== undefined) {
+  //     console.log("wallet", wallet);
+  //     if (wallet.account.chains[0] === "sui:unknown") {
+  //       setCurrentChain("m2");
+  //       initData("m2");
+  //     } else {
+  //       setCurrentChain(wallet.account.chains[0]);
+  //       initData(wallet.account.chains[0]);
+  //     }
+  //   }
+  // }, [wallet]);
+  // async function initData(_currentChain) {
+  //   setAllExchanges((await getAllExchanges(_currentChain)).data);
+  //   const connection = new SuiPriceServiceConnection(
+  //     "https://hermes.pyth.network"
+  //   );
+  //   const priceIds = [
+  //     "0x23d7315113f5b1d3ba7a83604c44b94d79f4fd69af77f804fc7f920a6dc65744",
+  //   ];
+  //   const priceFeeds = await connection.getLatestPriceFeeds(priceIds);
+  //   setSuiPrice(
+  //     (priceFeeds[0].getPriceNoOlderThan(60).price / 10 ** 8).toFixed(2)
+  //   );
+  // }
+
   const handleXAmountChange = async (e) => {
     setInputXAmount(e.target.value);
 
