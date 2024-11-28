@@ -57,7 +57,7 @@ export default function Topbar() {
         />
       </Link>
       {pathname !== "/" ? (
-        <div className="flex-1 flex items-center justify-center gap-[24px] font-['twkemono-bold']">
+        <div className="flex-1 flex items-center justify-center gap-[24px] font-['TWK Everett Mono']">
           <Link
             key="console"
             href="/console"

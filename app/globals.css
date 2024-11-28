@@ -2,7 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-
 @font-face {
   font-family: "TwkeRegular";
   src: url("/TWKEverett-Regular.otf");
@@ -31,7 +30,7 @@
   }
 }
 html {
-  font-family: 'TwkeRegular';
+  font-family: "TwkeRegular";
 }
 
 @layer utilities {

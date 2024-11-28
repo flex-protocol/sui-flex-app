@@ -100,7 +100,7 @@ export function WalletSelector(walletSortingOptions) {
     <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
       <DialogTrigger asChild>
         <Button className="flex w-[286px] h-[40px] px-[24px] py-[10px] font-['twkemono-Regular'] text-[16px] justify-center items-center gap-[10px] rounded-[32px] border border-black bg-[#FFCD0F] shadow-[0px_0px_8px_0px_rgba(0,0,0,0.32)] cursor-pointer text-[#030201] hover:bg-[#FFCD0F]">
-          Connect a Wallet
+          Connect Wallet
         </Button>
       </DialogTrigger>
       <ConnectWalletDialog close={closeDialog} {...walletSortingOptions} />
