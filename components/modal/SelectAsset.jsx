@@ -15,6 +15,7 @@ export default function SelectAsset({
 }) {
   const [searchValue, setSearchValue] = useState("");
   const [availableCoins, setAvailableCoins] = useState([]);
+  const [isLoadingCoins, setIsLoadingCoins] = useState(false);
 
   async function getAccountCoinsWithBalances(accountAddress) {
     try {
@@ -45,8 +46,13 @@ export default function SelectAsset({
   useEffect(() => {
     async function loadCoins() {
       if (accountAddress && flexSdk) {
-        const coins = await getAccountCoinsWithBalances(accountAddress);
-        setAvailableCoins(coins || []);
+        setIsLoadingCoins(true);
+        try {
+          const coins = await getAccountCoinsWithBalances(accountAddress);
+          setAvailableCoins(coins || []);
+        } finally {
+          setIsLoadingCoins(false);
+        }
       }
     }
     loadCoins();
@@ -61,11 +67,11 @@ export default function SelectAsset({
     .map((coin) => (
       <div
         key={coin.symbol}
-        className="flex p-[0px_16px] items-center gap-[8px] cursor-pointer hover:bg-gray-100"
+        className="flex p-[0px_16px] items-center gap-[8px] cursor-pointer hover:bg-gray-100 rounded-lg"
         onClick={() =>
           handleClick(
             {
-              type: coin.metadata.type,
+              type: coin.asset_type,
               name: coin.name,
               symbol: coin.symbol,
               balance: coin.formattedBalance,
@@ -148,7 +154,13 @@ export default function SelectAsset({
         </div>
 
         <div className="max-h-[400px] overflow-y-auto flex-col flex gap-[16px]">
-          {assetList}
+          {isLoadingCoins ? (
+            <div className="flex justify-center items-center py-4">
+              <span className="loading loading-spinner loading-md"></span>
+            </div>
+          ) : (
+            assetList
+          )}
         </div>
       </div>
       <form method="dialog" className="modal-backdrop">

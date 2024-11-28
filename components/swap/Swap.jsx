@@ -31,8 +31,6 @@ export default function Swap() {
 
   const [inputXAmount, setInputXAmount] = useState(0);
   const [inputYAmount, setInputYAmount] = useState(0);
-  const [selectTokenX, setSelectTokenX] = useState("");
-  const [selectTokenY, setSelectTokenY] = useState("");
   const [selectAction, setSelectAction] = useState("SWAP");
   const [selectTokenAsset, setSelectTokenAsset] = useState("");
   const [allExchanges, setAllExchanges] = useState([]);
@@ -54,8 +52,10 @@ export default function Swap() {
   const ref = useRef(null);
   const [width, setWidth] = useState(0);
   const [flexSdk, setFlexSdk] = useState(null);
-  const [selectTokenXSymbol, setSelectTokenXSymbol] = useState("");
-  const [selectTokenYSymbol, setSelectTokenYSymbol] = useState("");
+  const [tokenX, setTokenX] = useState(null);
+  const [tokenY, setTokenY] = useState(null);
+  const [tokenXPrice, setTokenXPrice] = useState(0);
+  const [tokenYPrice, setTokenYPrice] = useState(0);
 
   useEffect(() => {
     const sdk = new FlexSDK({
@@ -69,15 +69,15 @@ export default function Swap() {
   const handleXAmountChange = async (e) => {
     setInputXAmount(e.target.value);
 
-    if (selectTokenX === "" || selectTokenY === "") {
+    if (tokenX === null || tokenY === null) {
       return;
     }
     queryPairAndAmountOut(
       parseInt(
-        e.target.value * 10 ** coinInfo[currentChain][selectTokenX].decimals
+        e.target.value * 10 ** coinInfo[currentChain][tokenX.type].decimals
       ),
-      selectTokenX,
-      selectTokenY,
+      tokenX.type,
+      tokenY.type,
       slippage
     );
     // arrangeCollectionsByTradingPair()
@@ -161,7 +161,7 @@ export default function Swap() {
       console.log("amountOut api ", amountOut);
       const result =
         (amountOut.data * (1 - _slippage * 0.01)) /
-        10 ** coinInfo[currentChain][tokenY].decimals;
+        10 ** coinInfo[currentChain][tokenY.type].decimals;
       console.log("amountOut", result);
       setInputYAmount(result === undefined ? 0 : result.toFixed(2));
     } else if (selectAction === "ADDLIQUIDITY") {
@@ -184,7 +184,10 @@ export default function Swap() {
       }
       // console.log('amountOut', amountOut)
       setInputYAmount(
-        (amountOut / 10 ** coinInfo[currentChain][tokenY].decimals).toFixed(2)
+        (
+          amountOut /
+          10 ** coinInfo[currentChain][tokenY.type].decimals
+        ).toFixed(2)
       );
     }
     setOutputIsLoading(false);
@@ -197,9 +200,9 @@ export default function Swap() {
   const handleSlippageChange = async (e) => {
     setSlippage(e.target.value);
     queryPairAndAmountOut(
-      inputXAmount * 10 ** coinInfo[currentChain][selectTokenX].decimals,
-      selectTokenX,
-      selectTokenY,
+      inputXAmount * 10 ** coinInfo[currentChain][tokenX.type].decimals,
+      tokenX.type,
+      tokenY.type,
       e.target.value
     );
   };
@@ -250,61 +253,10 @@ export default function Swap() {
     return { tokenPairs: "", swapType: "" };
   }
 
-  function doAction() {
-    // if (inputXAmount === '' || inputXAmount === 0) {
-    //     toast.custom(<TxToast title="please select token" digest={""}/>);
-    //     return
-    // }
-    // if (inputYAmount === '' || inputYAmount === 0) {
-    //     toast.custom(<TxToast title="please select token" digest={""}/>);
-    //     return
-    // }
-    // if (selectTokenX === '') {
-    //     toast.custom(<TxToast title="please select token" digest={""}/>);
-    //     return
-    // }
-    // if (selectTokenY === '') {
-    //     toast.custom(<TxToast title="please select token" digest={""}/>);
-    //     return
-    // }
-    // if (inputXAmount > calculateBalance(selectTokenXBalance, selectTokenX)) {
-    //     toast.custom(<TxToast title="Insufficient balance" digest={""}/>);
-    //     return;
-    // }
-    const { status, info } = submitStatus();
-    console.log("status, info", status, info);
-    if (!status) {
-      toast.custom(<TxToast title={info} digest={""} />);
-      return;
-    }
-    const { tokenPairs, swapType } = queryTokenPairs(
-      selectTokenX,
-      selectTokenY
-    );
-    setSwapType(swapType);
-    if (tokenPairs === "") {
-      toast.custom(<TxToast title="don't have pool" digest={""} />);
-      return;
-    }
-    let XAmount = parseInt(
-      inputXAmount * 10 ** coinInfo[currentChain][selectTokenX].decimals
-    );
-    let YAmount = parseInt(
-      inputYAmount * 10 ** coinInfo[currentChain][selectTokenY].decimals
-    );
-    if (selectAction === "SWAP") {
-      swap(tokenPairs, swapType, XAmount, YAmount);
-    } else if (selectAction === "ADDLIQUIDITY") {
-      addLiquidity(tokenPairs, XAmount, YAmount);
-    } else if (selectAction === "CREATE") {
-      createPool(tokenPairs, XAmount, YAmount);
-    }
-  }
-
   function doSplitXCoin(txb, XAmount, YAmount) {
     let splitXCoin = "";
     if (
-      selectTokenX ===
+      tokenX ===
       "0000000000000000000000000000000000000000000000000000000000000002::sui::SUI"
     ) {
       splitXCoin = txb.splitCoins(txb.gas, [txb.pure(XAmount)]);
@@ -320,10 +272,10 @@ export default function Swap() {
   }
 
   async function doSplitYCoin(txb, XAmount, YAmount) {
-    console.log("selectTokenY", selectTokenY);
+    console.log("selectTokenY", tokenY);
     let splitYCoin = "";
     if (
-      selectTokenY ===
+      tokenY ===
       "0000000000000000000000000000000000000000000000000000000000000002::sui::SUI"
     ) {
       splitYCoin = txb.splitCoins(txb.gas, [txb.pure(YAmount)]);
@@ -334,11 +286,11 @@ export default function Swap() {
       } else {
         // 创建个0 objectid
         // '0x71ec440c694153474dd2a9c5c19cf60e2968d1af51aacfa24e34ee96a2df44dd::example_coin::EXAMPLE_COIN'
-        await zero(selectTokenY, txb);
+        await zero(tokenY, txb);
         // await selectToken(selectTokenY)
         let flag = true;
         while (flag) {
-          const result = await getCoins(selectTokenY);
+          const result = await getCoins(tokenY);
           if (
             result !== undefined &&
             result !== null &&
@@ -412,7 +364,7 @@ export default function Swap() {
         typeArguments: [xTypeArg, yTypeArg],
       });
       if (
-        selectTokenY ===
+        tokenY ===
         "0000000000000000000000000000000000000000000000000000000000000002::sui::SUI"
       ) {
         txb.transferObjects([splitYCoin], txb.pure.address(account.address));
@@ -445,53 +397,6 @@ export default function Swap() {
       // toast.error(`Failed to add token to sell pool: ${error.message}.`);
     }
   }
-
-  // if (inputXAmount === '' || inputXAmount === 0) {
-  //     toast.custom(<TxToast title="please select token" digest={""}/>);
-  //     return
-  // }
-  // if (inputYAmount === '' || inputYAmount === 0) {
-  //     toast.custom(<TxToast title="please select token" digest={""}/>);
-  //     return
-  // }
-  // if (selectTokenX === '') {
-  //     toast.custom(<TxToast title="please select token" digest={""}/>);
-  //     return
-  // }
-  // if (selectTokenY === '') {
-  //     toast.custom(<TxToast title="please select token" digest={""}/>);
-  //     return
-  // }
-  // if (inputXAmount > calculateBalance(selectTokenXBalance, selectTokenX)) {
-  //     toast.custom(<TxToast title="Insufficient balance" digest={""}/>);
-  //     return;
-  // }
-  //
-  function submitStatus() {
-    if (inputXAmount === "" || inputXAmount === 0) {
-      return { status: false, info: "please input amount" };
-    }
-    if (inputYAmount === "" || inputYAmount === 0) {
-      return { status: false, info: "please input amount" };
-    }
-    if (selectTokenX === "") {
-      return { status: false, info: "please select token" };
-    }
-    if (selectTokenY === "") {
-      return { status: false, info: "please select token" };
-    }
-    if (
-      Number(inputXAmount) + 0.01 >
-      calculateBalance(selectTokenXBalance, selectTokenX)
-    ) {
-      return { status: false, info: "Insufficient balance" };
-    }
-    return { status: true, info: "" };
-  }
-
-  useEffect(() => {
-    submitStatus();
-  }, [inputXAmount, inputYAmount, selectTokenX, selectTokenY]);
 
   async function addLiquidity(tokenPairs, XAmount, YAmount) {
     try {
@@ -664,28 +569,6 @@ export default function Swap() {
     setShowDropDownContent(!showDropDownContent);
   }
 
-  function inputMaxAmount(tokenXOrY) {
-    if (tokenXOrY === "X") {
-      if (selectTokenX === "") {
-        return;
-      }
-      const balanceX = calculateBalance(selectTokenXBalance, selectTokenX);
-      setInputXAmount(balanceX);
-      queryPairAndAmountOut(
-        balanceX * 10 ** coinInfo[currentChain][selectTokenX].decimals,
-        selectTokenX,
-        selectTokenY,
-        slippage
-      );
-    } else {
-      if (selectTokenY === "") {
-        return;
-      }
-      const balanceY = calculateBalance(selectTokenYBalance, selectTokenY);
-      setInputYAmount(balanceY);
-    }
-  }
-
   function openModal() {
     if (selectAction === "SWAP") {
       document.getElementById("transaction_overview_modal").showModal();
@@ -703,35 +586,9 @@ export default function Swap() {
 
     try {
       if (_selectTokenAsset === "tokenx") {
-        setSelectTokenX(tokenInfo.type);
-        setSelectTokenXSymbol(tokenInfo.symbol);
-        const result = await getCoins(tokenInfo.type);
-        setSelectTokenXBalance(result);
-
-        if (selectTokenY !== "") {
-          queryPairAndAmountOut(
-            inputXAmount *
-              10 ** coinInfo[currentChain][tokenInfo.type].decimals,
-            tokenInfo.type,
-            selectTokenY,
-            slippage
-          );
-        }
+        setTokenX(tokenInfo);
       } else {
-        setSelectTokenY(tokenInfo.type);
-        setSelectTokenYSymbol(tokenInfo.symbol);
-        const result = await getCoins(tokenInfo.type);
-        setSelectTokenYBalance(result);
-
-        if (selectTokenX !== "") {
-          queryPairAndAmountOut(
-            inputXAmount *
-              10 ** coinInfo[currentChain][tokenInfo.type].decimals,
-            selectTokenX,
-            tokenInfo.type,
-            slippage
-          );
-        }
+        setTokenY(tokenInfo);
       }
 
       setIsLoading(false);
@@ -827,20 +684,24 @@ export default function Swap() {
             </div>
             <div className="flex items-center bg-[#323232] rounded-[0.5rem] py-[0.25rem] px-[1rem]">
               <input
-                onChange={handleXAmountChange}
+                onChange={(e) => {
+                  const value = e.target.value.replace(/[^0-9.]/g, "");
+                  if (value === "" || /^\d*\.?\d*$/.test(value)) {
+                    handleXAmountChange({ target: { value } });
+                  }
+                }}
                 value={inputXAmount}
                 type="text"
-                className="mr-[0.5rem] bg-[#323232] text-white focus:outline-none flex-1 w-full text-[12px] "
+                className="mr-[0.5rem] bg-[#323232] text-white focus:outline-none flex-1 w-full text-[12px]"
                 placeholder="Asset"
               />
-              {/*<span className="text-white mr-[50px]">Asset</span>*/}
 
               <div
                 onClick={() => openAssetModal("tokenx")}
                 className="text-white bg-[#808080] p-[6px_4px] rounded-[0.5rem] flex items-center gap-[2px] cursor-pointer"
               >
                 <span className="mr-[0.25rem] text-[12px]">
-                  {selectTokenX === "" ? "Select" : selectTokenXSymbol}
+                  {tokenX ? tokenX.symbol : "Select"}
                 </span>
                 <Image alt="" src="/down.svg" width={20} height={20}></Image>
               </div>
@@ -852,11 +713,12 @@ export default function Swap() {
               </button>
             </div>
             <div className="flex justify-between text-[0.55rem] text-[#808080] px-[16px] w-[100%]">
-              <div>{"$ "}</div>
               <div>
-                Balance:
-                {calculateBalance(selectTokenXBalance, selectTokenX)}
+                {inputXAmount && tokenXPrice
+                  ? `$ ${(parseFloat(inputXAmount) * tokenXPrice).toFixed(2)}`
+                  : "$ -"}
               </div>
+              <div>Balance:</div>
             </div>
           </div>
 
@@ -884,7 +746,12 @@ export default function Swap() {
               <input
                 type="text"
                 className="mr-[0.5rem] bg-[#323232] text-white focus:outline-none flex-1 w-full text-[12px]"
-                onChange={handleYAmountChange}
+                onChange={(e) => {
+                  const value = e.target.value.replace(/[^0-9.]/g, "");
+                  if (value === "" || /^\d*\.?\d*$/.test(value)) {
+                    handleYAmountChange({ target: { value } });
+                  }
+                }}
                 value={inputYAmount}
                 placeholder="Asset"
               />
@@ -894,7 +761,7 @@ export default function Swap() {
                 className="text-white bg-[#808080] p-[6px_4px] rounded-[0.5rem] flex items-center gap-[2px] cursor-pointer"
               >
                 <span className="mr-[0.25rem] text-[12px]">
-                  {selectTokenY === "" ? "Select" : selectTokenYSymbol}
+                  {tokenY ? tokenY.symbol : "Select"}
                 </span>
                 <Image alt="" src="/down.svg" width={20} height={20}></Image>
               </div>
@@ -906,11 +773,12 @@ export default function Swap() {
               </button>
             </div>
             <div className="flex justify-between text-[0.55rem] text-[#808080] px-[16px] w-[100%]">
-              <span>{"$ "}</span>
-              <span>
-                Balance:
-                {calculateBalance(selectTokenYBalance, selectTokenY)}
-              </span>
+              <div>
+                {inputYAmount && tokenYPrice
+                  ? `$ ${(parseFloat(inputYAmount) * tokenYPrice).toFixed(2)}`
+                  : "$ -"}
+              </div>
+              <div>Balance:</div>
             </div>
           </div>
 
@@ -954,15 +822,13 @@ export default function Swap() {
           </div>
 
           <button
-            disabled={!submitStatus().status}
+            disabled={true}
             className={` w-[320px] px-[64px] py-[8px] gap-[12px] bg-[#3556D5] border-none text-white text-[14px] rounded-[16px] ${
-              !submitStatus().status
-                ? "bg-[#939393]"
-                : "shadow-[0px_0px_12px_0px_#3556D5]"
+              true ? "bg-[#939393]" : "shadow-[0px_0px_12px_0px_#3556D5]"
             }`}
             onClick={() => openModal()}
           >
-            Confirm {submitStatus().status}
+            Confirm
           </button>
 
           <SelectAsset
