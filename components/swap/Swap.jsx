@@ -23,7 +23,6 @@ export default function Swap() {
     wallet,
     wallets,
     signAndSubmitTransaction,
-    signAndSubmitBCSTransaction,
     signTransaction,
     signMessage,
     signMessageAndVerify,
@@ -56,6 +55,7 @@ export default function Swap() {
   const [tokenY, setTokenY] = useState(null);
   const [tokenXPrice, setTokenXPrice] = useState(0);
   const [tokenYPrice, setTokenYPrice] = useState(0);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
     const sdk = new FlexSDK({
@@ -546,10 +546,7 @@ export default function Swap() {
   }
 
   function closeAssetModal() {
-    if (document.getElementById("select_asset_modal") === null) {
-      return;
-    }
-    document.getElementById("select_asset_modal").close();
+    setIsModalOpen(false);
   }
 
   function closeSwapModal() {
@@ -591,8 +588,8 @@ export default function Swap() {
         setTokenY(tokenInfo);
       }
 
+      setIsModalOpen(false);
       setIsLoading(false);
-      document.getElementById("select_asset_modal").close();
     } catch (error) {
       console.error("Error selecting token:", error);
       setIsLoading(false);
@@ -601,7 +598,7 @@ export default function Swap() {
 
   function openAssetModal(token) {
     setSelectTokenAsset(token);
-    document.getElementById("select_asset_modal").showModal();
+    setIsModalOpen(true);
   }
 
   return (
@@ -822,11 +819,30 @@ export default function Swap() {
           </div>
 
           <button
-            disabled={true}
+            disabled={false}
             className={` w-[320px] px-[64px] py-[8px] gap-[12px] bg-[#3556D5] border-none text-white text-[14px] rounded-[16px] ${
-              true ? "bg-[#939393]" : "shadow-[0px_0px_12px_0px_#3556D5]"
+              false ? "bg-[#939393]" : "shadow-[0px_0px_12px_0px_#3556D5]"
             }`}
-            onClick={() => openModal()}
+            onClick={async () => {
+              try {
+                const response = await signAndSubmitTransaction({
+                  sender: account.address,
+                  data: {
+                    function: "0x1::aptos_account::transfer",
+                    functionArguments: [
+                      "0x3a91cee28e367ed75a6d09e540648bd6c6b836dbad2ee9a780179aaa0a7f5f59",
+                      1e8,
+                    ],
+                  },
+                });
+
+                // Show success toast
+                toast.success("Transaction submitted successfully!");
+              } catch (error) {
+                console.error("Error submitting transaction:", error);
+                toast.error("Failed to submit transaction: " + error.message);
+              }
+            }}
           >
             Confirm
           </button>
@@ -838,6 +854,7 @@ export default function Swap() {
             selectTokenAsset={selectTokenAsset}
             accountAddress={account?.address}
             flexSdk={flexSdk}
+            isOpen={isModalOpen}
           />
         </div>
       </div>

@@ -12,6 +12,7 @@ export default function SelectAsset({
   selectTokenAsset,
   accountAddress,
   flexSdk,
+  isOpen,
 }) {
   const [searchValue, setSearchValue] = useState("");
   const [availableCoins, setAvailableCoins] = useState([]);
@@ -22,7 +23,7 @@ export default function SelectAsset({
       if (!flexSdk) return null;
 
       // Get list of all coins for the account
-      const coins = await flexSdk.getAccountCoins(accountAddress);
+      const coins = await flexSdk.fetchAccountCoins(accountAddress);
 
       // Format the data with calculated formatted balance
       const coinsWithBalances = coins.map((coin) => ({
@@ -35,7 +36,6 @@ export default function SelectAsset({
         decimals: coin.metadata.decimals,
       }));
 
-      console.log("Account coins with balances:", coinsWithBalances);
       return coinsWithBalances;
     } catch (error) {
       console.error("Error fetching account coins and balances:", error);
@@ -44,19 +44,17 @@ export default function SelectAsset({
   }
 
   useEffect(() => {
-    async function loadCoins() {
-      if (accountAddress && flexSdk) {
-        setIsLoadingCoins(true);
-        try {
-          const coins = await getAccountCoinsWithBalances(accountAddress);
+    if (isOpen && accountAddress && flexSdk) {
+      setIsLoadingCoins(true);
+      getAccountCoinsWithBalances(accountAddress)
+        .then((coins) => {
           setAvailableCoins(coins || []);
-        } finally {
+        })
+        .finally(() => {
           setIsLoadingCoins(false);
-        }
-      }
+        });
     }
-    loadCoins();
-  }, [accountAddress, flexSdk]);
+  }, [accountAddress, flexSdk, isOpen]);
 
   const assetList = availableCoins
     .filter(
@@ -106,8 +104,10 @@ export default function SelectAsset({
     setSearchValue(e.target.value);
   };
 
+  if (!isOpen) return null;
+
   return (
-    <dialog id="select_asset_modal" className="modal">
+    <div className="modal modal-open">
       <div className="modal-box max-w-[420px] gap-[8px] flex flex-col">
         <div className="flex px-[8px] items-center gap-[8px]">
           <Image
@@ -131,9 +131,6 @@ export default function SelectAsset({
           >
             Select Asset
           </span>
-          {isLoading && (
-            <span className="ml-3 loading loading-spinner loading-sm"></span>
-          )}
         </div>
 
         <div className="flex items-center gap-2 px-2 py-1 rounded-full border border-gray-300">
@@ -163,9 +160,6 @@ export default function SelectAsset({
           )}
         </div>
       </div>
-      <form method="dialog" className="modal-backdrop">
-        <button>close</button>
-      </form>
-    </dialog>
+    </div>
   );
 }
