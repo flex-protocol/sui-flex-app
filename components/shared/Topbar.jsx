@@ -12,41 +12,8 @@ import { UniPassPopupSDK } from "@unipasswallet/popup-sdk";
 export default function Topbar() {
   const pathname = usePathname();
 
-  async function aaaaa() {
-    const upWallet = new UniPassPopupSDK({
-      env: "test",
-      // for polygon mumbai
-      chainType: "polygon",
-      // choose localStorage if you want to cache user account permanent
-      storageType: "sessionStorage",
-      appSettings: {
-        theme: "light",
-        appName: "UniPass Wallet",
-        appIcon: "",
-      },
-    });
-    try {
-      const account = await upWallet.login({
-        email: true,
-        eventListener: (event) => {
-          console.log("event", event);
-          const { type, body } = event;
-          if (type === "REGISTER") {
-            console.log("account", body);
-            // ElMessage.success("a user register");
-          }
-        },
-        connectType: "both",
-      });
-      const { address, email } = account;
-      console.log("account", address, email);
-    } catch (err) {
-      console.log("connect err", err);
-    }
-  }
-
   return (
-    <nav className="lg:flex hidden justify-between items-center h-[100px] border-b-white p-[24px_64px]">
+    <nav className="flex justify-between items-center h-[100px] border-b-white p-[24px_64px] max-[800px]:p-[16px_24px]">
       <Link href="/" className="flex-none">
         <Image
           src="/flex-logo.svg"

@@ -64,11 +64,12 @@ export default function SelectAsset({
     )
     .map((coin) => (
       <div
-        key={coin.symbol}
+        key={coin.asset_type}
         className="flex p-[0px_16px] items-center gap-[8px] cursor-pointer hover:bg-gray-100 rounded-lg"
         onClick={() =>
           handleClick(
             {
+              amount: coin.amount,
               type: coin.asset_type,
               name: coin.name,
               symbol: coin.symbol,
@@ -93,9 +94,7 @@ export default function SelectAsset({
             <span className="text-[12px]">{coin.name}</span>
             <span className="text-[8px]">{coin.symbol}</span>
           </div>
-          <div className="text-[12px]">
-            Balance: {coin.formattedBalance.toFixed(4)}
-          </div>
+          <div className="text-[12px]">Balance: {coin.formattedBalance}</div>
         </div>
       </div>
     ));

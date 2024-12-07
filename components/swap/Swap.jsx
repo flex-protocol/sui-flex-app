@@ -5,7 +5,7 @@ import { useEffect, useState, useRef, useLayoutEffect } from "react";
 import { getFullnodeUrl, SuiClient } from "@mysten/sui.js/client";
 import { calculateSwapAmountOut } from "../../actions/ftassets.action";
 import { TransactionBlock } from "@mysten/sui.js/transactions";
-import { COIN_TYPE } from "../../constant";
+import { API_BASE_URL, COIN_TYPE } from "../../constant";
 import SelectAsset from "@/components/modal/SelectAsset";
 import TxToast from "@/components/ui/TxToast";
 import toast from "react-hot-toast";
@@ -28,16 +28,15 @@ export default function Swap() {
     signMessageAndVerify,
   } = useWallet();
 
-  const [inputXAmount, setInputXAmount] = useState(0);
-  const [inputYAmount, setInputYAmount] = useState(0);
+  const [inputXAmount, setInputXAmount] = useState("");
+  const [inputYAmount, setInputYAmount] = useState("");
   const [selectAction, setSelectAction] = useState("SWAP");
   const [selectTokenAsset, setSelectTokenAsset] = useState("");
   const [allExchanges, setAllExchanges] = useState([]);
-  const [selectTokenXBalance, setSelectTokenXBalance] = useState([]);
-  const [selectTokenYBalance, setSelectTokenYBalance] = useState([]);
+
   const [swapType, setSwapType] = useState("");
   const [swapRate, setSwapRate] = useState(0);
-  const [slippage, setSlippage] = useState(0.5);
+  const [slippage, setSlippage] = useState("0.5");
   const [yreserve, setYreserve] = useState(0);
   const [resultHash, setResultHash] = useState("");
   const [currentChain, setCurrentChain] = useState("sui:testnet");
@@ -66,145 +65,12 @@ export default function Swap() {
     setFlexSdk(sdk);
   }, []);
 
-  const handleXAmountChange = async (e) => {
-    setInputXAmount(e.target.value);
-
-    if (tokenX === null || tokenY === null) {
-      return;
+  const handleSlippageChange = (e) => {
+    const value = e.target.value.replace(/[^0-9.]/g, "");
+    // Only allow one decimal point and one digit after decimal
+    if (value === "" || /^\d*\.?\d{0,1}$/.test(value)) {
+      setSlippage(value);
     }
-    queryPairAndAmountOut(
-      parseInt(
-        e.target.value * 10 ** coinInfo[currentChain][tokenX.type].decimals
-      ),
-      tokenX.type,
-      tokenY.type,
-      slippage
-    );
-    // arrangeCollectionsByTradingPair()
-  };
-
-  async function queryPair(tokenX, tokenY) {
-    const { tokenPairs, swapType: _swapType } = queryTokenPairs(tokenX, tokenY);
-    if (tokenPairs === "") {
-      setInputYAmount(0);
-      return {};
-    }
-    console.log("tokenPairs", tokenPairs);
-    // const client = new SuiClient({
-    //     url: getFullnodeUrl('testnet'),
-    // });
-    //
-    // console.log('config[currentChain + "Url"]', config[currentChain + "Url"])
-    const client = new SuiClient({
-      url:
-        currentChain === "m2"
-          ? config[currentChain + "Url"]
-          : getFullnodeUrl(config[currentChain + "Url"]),
-    });
-    const txn = await client.getObject({
-      id: tokenPairs,
-      // fetch the object content field
-      options: { showContent: true },
-    });
-    console.log("pair info", txn);
-    return { txn, _swapType };
-  }
-
-  async function queryPairAndAmountOut(
-    _amountValue,
-    tokenX,
-    tokenY,
-    _slippage
-  ) {
-    setOutputIsLoading(true);
-    const { txn, _swapType } = await queryPair(tokenX, tokenY);
-    if (txn === undefined) {
-      return;
-    }
-    setSwapType(_swapType);
-    console.log("handleXAmountChange", txn);
-    // console.log("txn", txn)
-    // console.log("txn", txn.data.content.fields.x_reserve)
-    let amountOut;
-    if (selectAction === "SWAP") {
-      if (swapType === "swap_x" || _swapType === "swap_x") {
-        amountOut = await calculateSwapAmountOut(
-          txn.data.content.fields.x_reserve,
-          txn.data.content.fields.y_reserve,
-          _amountValue,
-          currentChain,
-          txn.data.content.fields.fee_numerator,
-          txn.data.content.fields.fee_denominator
-        );
-        setSwapRate(
-          txn.data.content.fields.x_reserve / txn.data.content.fields.y_reserve
-        );
-        setYreserve(txn.data.content.fields.y_reserve);
-        setNumerator(txn.data.content.fields.fee_numerator);
-        setDenominator(txn.data.content.fields.fee_denominator);
-      } else {
-        amountOut = await calculateSwapAmountOut(
-          txn.data.content.fields.y_reserve,
-          txn.data.content.fields.x_reserve,
-          _amountValue,
-          currentChain,
-          txn.data.content.fields.fee_numerator,
-          txn.data.content.fields.fee_denominator
-        );
-        setSwapRate(
-          txn.data.content.fields.y_reserve / txn.data.content.fields.x_reserve
-        );
-        setYreserve(txn.data.content.fields.x_reserve);
-        setNumerator(txn.data.content.fields.fee_numerator);
-        setDenominator(txn.data.content.fields.fee_denominator);
-      }
-      console.log("amountOut api ", amountOut);
-      const result =
-        (amountOut.data * (1 - _slippage * 0.01)) /
-        10 ** coinInfo[currentChain][tokenY.type].decimals;
-      console.log("amountOut", result);
-      setInputYAmount(result === undefined ? 0 : result.toFixed(2));
-    } else if (selectAction === "ADDLIQUIDITY") {
-      if (swapType === "swap_x") {
-        amountOut = Math.floor(
-          _amountValue /
-            (txn.data.content.fields.x_reserve /
-              txn.data.content.fields.y_reserve)
-        );
-        setNumerator(txn.data.content.fields.fee_numerator);
-        setDenominator(txn.data.content.fields.fee_denominator);
-      } else {
-        amountOut = Math.floor(
-          (txn.data.content.fields.x_reserve /
-            txn.data.content.fields.y_reserve) *
-            _amountValue
-        );
-        setNumerator(txn.data.content.fields.fee_numerator);
-        setDenominator(txn.data.content.fields.fee_denominator);
-      }
-      // console.log('amountOut', amountOut)
-      setInputYAmount(
-        (
-          amountOut /
-          10 ** coinInfo[currentChain][tokenY.type].decimals
-        ).toFixed(2)
-      );
-    }
-    setOutputIsLoading(false);
-  }
-
-  const handleYAmountChange = async (e) => {
-    setInputYAmount(e.target.value);
-  };
-
-  const handleSlippageChange = async (e) => {
-    setSlippage(e.target.value);
-    queryPairAndAmountOut(
-      inputXAmount * 10 ** coinInfo[currentChain][tokenX.type].decimals,
-      tokenX.type,
-      tokenY.type,
-      e.target.value
-    );
   };
 
   function queryBalanceObj(tokenBalance, inputAmount, XorY) {
@@ -384,8 +250,6 @@ export default function Swap() {
       //     },
       // });
       // console.log('tx result', tx)
-      // console.log('tx result', tx.effects.status.status)
-      // console.log('tx result', tx.effects.status.error)
       setResultHash(res.digest);
       document.getElementById("transaction_overview_modal").close();
       document.getElementById("my_modal_2").showModal();
@@ -478,8 +342,7 @@ export default function Swap() {
         txb.pure.u64(XAmount),
         txb.object(splitYCoin),
         txb.pure.u64(YAmount),
-        txb.pure.u64(slippage * 10),
-        txb.pure.u64(1000),
+        ...getSlippageRatio(slippage),
       ];
       console.log("param", param, COIN_TYPE);
       txb.moveCall({
@@ -559,9 +422,9 @@ export default function Swap() {
   async function handleActionChange(value) {
     setSelectAction(value);
     if (value === "SWAP") {
-      setSlippage(0.5);
+      setSlippage("0.5");
     } else if (value === "CREATE") {
-      setSlippage(0.3);
+      setSlippage("0.3");
     }
     setShowDropDownContent(!showDropDownContent);
   }
@@ -640,7 +503,7 @@ export default function Swap() {
         </div>
         <div
           ref={ref}
-          className="flex flex-col items-center gap-[16px] max-[800px]:flex-col max-[800px]:items-center max-[800px]:w-[100%] min-[800px]:justify-center"
+          className="flex flex-col items-center gap-[16px] max-[800px]:flex-col max-[800px]:items-center min-[800px]:justify-center"
         >
           <div className="flex p-[8px_16px] items-center gap-[16px] rounded-[16px] bg-[rgba(255,255,255,0.3)]">
             <button
@@ -684,7 +547,7 @@ export default function Swap() {
                 onChange={(e) => {
                   const value = e.target.value.replace(/[^0-9.]/g, "");
                   if (value === "" || /^\d*\.?\d*$/.test(value)) {
-                    handleXAmountChange({ target: { value } });
+                    setInputXAmount(value);
                   }
                 }}
                 value={inputXAmount}
@@ -700,7 +563,12 @@ export default function Swap() {
                 <span className="mr-[0.25rem] text-[12px]">
                   {tokenX ? tokenX.symbol : "Select"}
                 </span>
-                <Image alt="" src="/down.svg" width={20} height={20}></Image>
+                <Image
+                  alt="down arrow"
+                  src="/down.svg"
+                  width={20}
+                  height={20}
+                ></Image>
               </div>
               <button
                 className="text-white flex h-[31px] p-[0px_8px] justify-center items-center gap-[10px] rounded-[8px] bg-[rgba(3,55,255,0.8)] border-none ml-[0.25rem] text-[12px]"
@@ -715,20 +583,25 @@ export default function Swap() {
                   ? `$ ${(parseFloat(inputXAmount) * tokenXPrice).toFixed(2)}`
                   : "$ -"}
               </div>
-              <div>Balance:</div>
+              <div>{`Balance: ${tokenX ? tokenX.balance : "-"}`}</div>
             </div>
           </div>
 
           <div className="mx-[2rem]">
             {selectAction === "SWAP" ? (
               <Image
-                alt=""
+                alt="swap arrows"
                 src="/swap-arrows.svg"
                 width={38}
                 height={46}
               ></Image>
             ) : (
-              <Image src="/invert-arrows.svg" width={38} height={46}></Image>
+              <Image
+                src="/invert-arrows.svg"
+                width={38}
+                height={46}
+                alt="invert arrows"
+              ></Image>
             )}
           </div>
 
@@ -746,7 +619,7 @@ export default function Swap() {
                 onChange={(e) => {
                   const value = e.target.value.replace(/[^0-9.]/g, "");
                   if (value === "" || /^\d*\.?\d*$/.test(value)) {
-                    handleYAmountChange({ target: { value } });
+                    setInputYAmount(value);
                   }
                 }}
                 value={inputYAmount}
@@ -760,7 +633,12 @@ export default function Swap() {
                 <span className="mr-[0.25rem] text-[12px]">
                   {tokenY ? tokenY.symbol : "Select"}
                 </span>
-                <Image alt="" src="/down.svg" width={20} height={20}></Image>
+                <Image
+                  alt="down arrow"
+                  src="/down.svg"
+                  width={20}
+                  height={20}
+                ></Image>
               </div>
               <button
                 className="text-white flex h-[31px] p-[0px_8px] justify-center items-center gap-[10px] rounded-[8px] bg-[rgba(3,55,255,0.8)] border-none ml-[0.25rem] text-[12px]"
@@ -775,19 +653,20 @@ export default function Swap() {
                   ? `$ ${(parseFloat(inputYAmount) * tokenYPrice).toFixed(2)}`
                   : "$ -"}
               </div>
-              <div>Balance:</div>
+              <div>{`Balance: ${tokenY ? tokenY.balance : "-"}`}</div>
             </div>
           </div>
 
-          <div className="flex flex-col items-end	px-[1rem] gap-[4px] ml-auto">
+          <div className="flex flex-col items-end px-[1rem] gap-[4px] ml-auto">
             {selectAction === "SWAP" && (
               <>
                 <div className="bg-[#323232] text-white rounded-[8px] overflow-hidden flex items-center py-[0.35rem] flex p-[4px_16px] items-center gap-[4px] w-[100px]">
                   <input
-                    className="bg-[#323232] focus:outline-none text-[0.5rem]  w-[16px]"
+                    className="bg-[#323232] focus:outline-none text-[0.5rem] w-[16px]"
                     onChange={handleSlippageChange}
                     value={slippage}
                     type="text"
+                    inputMode="decimal"
                   />
                   <span className="text-[#808080] text-[0.5rem] ">
                     % Slippage
@@ -806,6 +685,7 @@ export default function Swap() {
                     onChange={handleSlippageChange}
                     value={slippage}
                     type="text"
+                    inputMode="decimal"
                   />
                   <span className=" text-[#808080] text-[0.5rem]">
                     % LP Fee
@@ -819,28 +699,110 @@ export default function Swap() {
           </div>
 
           <button
-            disabled={false}
+            disabled={
+              inputXAmount === "" ||
+              inputYAmount === "" ||
+              tokenX === null ||
+              tokenY === null
+            }
             className={` w-[320px] px-[64px] py-[8px] gap-[12px] bg-[#3556D5] border-none text-white text-[14px] rounded-[16px] ${
-              false ? "bg-[#939393]" : "shadow-[0px_0px_12px_0px_#3556D5]"
+              inputXAmount === "" ||
+              inputYAmount === "" ||
+              tokenX === null ||
+              tokenY === null
+                ? "bg-[#939393]"
+                : "shadow-[0px_0px_12px_0px_#3556D5]"
             }`}
             onClick={async () => {
-              try {
-                const response = await signAndSubmitTransaction({
-                  sender: account.address,
-                  data: {
-                    function: "0x1::aptos_account::transfer",
-                    functionArguments: [
-                      "0x3a91cee28e367ed75a6d09e540648bd6c6b836dbad2ee9a780179aaa0a7f5f59",
-                      1e8,
-                    ],
-                  },
-                });
+              switch (selectAction) {
+                case "SWAP":
+                  try {
+                    const poolIdRes = await fetch(
+                      `${API_BASE_URL}/TokenPairs/by-token-types?xTokenType=${tokenX.type}&yTokenType=${tokenY.type}`
+                    );
+                    const poolIdResJson = await poolIdRes.json();
 
-                // Show success toast
-                toast.success("Transaction submitted successfully!");
-              } catch (error) {
-                console.error("Error submitting transaction:", error);
-                toast.error("Failed to submit transaction: " + error.message);
+                    console.log("poolIdResJson", poolIdResJson);
+                    const poolId = poolIdResJson.reduce((prev, current) => {
+                      if (
+                        parseFloat(current.x_ReserveValue) >=
+                          parseFloat(
+                            parseFloat(inputXAmount) * 10 ** tokenX.decimals
+                          ) &&
+                        parseFloat(current.y_ReserveValue) >=
+                          parseFloat(
+                            parseFloat(inputYAmount) * 10 ** tokenY.decimals
+                          )
+                      ) {
+                        return current.id;
+                      }
+                      return prev;
+                    }, "");
+
+                    if (!poolId) {
+                      toast.error("No valid pool found");
+                      return;
+                    }
+
+                    const swapCoinData = await flexSdk.coinModule.swapCoinData(
+                      poolId,
+                      true,
+                      parseFloat(inputXAmount) * 10 ** tokenX.decimals,
+                      0
+                    );
+
+                    const response = await signAndSubmitTransaction({
+                      sender: account.address,
+                      data: swapCoinData,
+                    });
+
+                    console.log(response);
+
+                    await flexSdk.aptosClient.waitForTransaction({
+                      transactionHash: response.hash,
+                    });
+
+                    // Show success toast
+                    toast.success("Transaction submitted successfully!");
+                  } catch (error) {
+                    console.error("Error submitting transaction:", error);
+                    toast.error(
+                      "Failed to submit transaction: " + error.message
+                    );
+                  }
+                  break;
+                case "CREATE":
+                  try {
+                    const response = await signAndSubmitTransaction({
+                      sender: account.address,
+                      data: flexSdk.coinModule.createCoinPoolData(
+                        tokenX.type,
+                        tokenY.type,
+                        parseFloat(inputXAmount) * 10 ** tokenX.decimals,
+                        parseFloat(inputYAmount) * 10 ** tokenY.decimals,
+                        parseFloat(slippage) * 10,
+                        1000
+                      ),
+                    });
+
+                    console.log(response);
+                    await flexSdk.aptosClient.waitForTransaction({
+                      transactionHash: response.hash,
+                    });
+
+                    // Show success toast
+                    toast.success("Transaction submitted successfully!");
+                  } catch (error) {
+                    console.error("Error submitting transaction:", error);
+                    toast.error(
+                      "Failed to submit transaction: " + error.message
+                    );
+                  }
+                  break;
+                case "ADDLIQUIDITY":
+                  break;
+                default:
+                  break;
               }
             }}
           >
